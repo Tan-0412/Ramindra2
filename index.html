@@ -255,6 +255,7 @@ pre.code{
 <div class="tabs">
   <div class="tab active" onclick="switchTab('record')" id="tab-record">📝 บันทึก</div>
   <div class="tab" onclick="switchTab('history')" id="tab-history">📋 ประวัติ</div>
+  <div class="tab" onclick="switchTab('report')" id="tab-report">📄 รายงาน</div>
   <div class="tab" onclick="switchTab('setup')" id="tab-setup">⚙️ ตั้งค่า</div>
 </div>
 
@@ -288,7 +289,7 @@ pre.code{
           <div class="frow" style="margin-bottom:0;">
             <label>ผู้ขอเบิก</label>
             <select id="recRequester" onchange="checkCustom('recRequester','recRequesterCustom')">
-              <option value="รวิรรณ">รวิรรณ</option>
+              <option value="รวิวรรณ">รวิวรรณ</option>
               <option value="__custom__">อื่นๆ</option>
             </select>
             <input type="text" id="recRequesterCustom" placeholder="ชื่อ..." style="display:none;margin-top:6px;">
@@ -296,7 +297,7 @@ pre.code{
           <div class="frow" style="margin-bottom:0;">
             <label>ผู้ให้เบิก</label>
             <select id="recApprover" onchange="checkCustom('recApprover','recApproverCustom')">
-              <option value="รวิรรณ">รวิรรณ</option>
+              <option value="รวิวรรณ">รวิวรรณ</option>
               <option value="__custom__">อื่นๆ</option>
             </select>
             <input type="text" id="recApproverCustom" placeholder="ชื่อ..." style="display:none;margin-top:6px;">
@@ -392,12 +393,29 @@ pre.code{
           <th>#</th><th>วันที่</th><th>รายละเอียด</th><th>ผู้ขอเบิก</th>
           <th class="r">ไมล์ไป</th><th>เวลาเบิก</th>
           <th class="r">ไมล์กลับ</th><th>เวลาคืน</th>
-          <th class="r">รวม กม.</th><th>สถานะ</th><th></th>
+          <th class="r">รวม กม.</th><th>สถานะ</th><th>หมายเหตุ</th><th></th>
         </tr></thead>
         <tbody id="histBody">
-          <tr><td colspan="11"><div class="loader"><div class="loader-spin"></div><br>กำลังโหลด...</div></td></tr>
+          <tr><td colspan="12"><div class="loader"><div class="loader-spin"></div><br>กำลังโหลด...</div></td></tr>
         </tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════ PAGE: REPORT ════ -->
+<div class="page" id="page-report">
+  <div style="max-width:520px;margin:40px auto;padding:0 16px;text-align:center;">
+    <div class="card">
+      <div class="card-hdr"><h2>📄 รายงานการใช้รถ</h2><p>พิมพ์ / บันทึก PDF</p></div>
+      <div class="card-body" style="padding:28px 20px;">
+        <div style="font-size:48px;margin-bottom:16px;">📋</div>
+        <p style="font-size:14px;color:var(--tx);margin-bottom:6px;font-weight:600;">รายงานการใช้รถ 2ฒฉ 4495</p>
+        <p style="font-size:12px;color:var(--gray);margin-bottom:20px;line-height:1.7;">กรองตามเดือน · ช่วงวันที่ · ผู้ขอเบิก<br>พร้อมพิมพ์หรือบันทึก PDF ได้ทันที</p>
+        <button class="btn btn-gold btn-full" onclick="openReport()" style="font-size:15px;padding:14px;">
+          📄 เปิดหน้ารายงาน
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -576,6 +594,42 @@ function ok(data) {
           <button class="btn btn-outline btn-sm" onclick="testConn()">🧪 ทดสอบ</button>
         </div>
         <div id="setupStatus" style="font-size:12px;margin-top:8px;min-height:18px;color:var(--green);"></div>
+        <div class="dvd" style="margin:14px 0;"></div>
+        <button class="btn btn-outline btn-sm" onclick="resetCache()" style="color:var(--red);border-color:#f5c6c6;">🔄 ล้างค่าเก่า / รีเซ็ต</button>
+        <p style="font-size:10px;color:var(--gray);margin-top:5px;">ใช้เมื่อ dropdown แสดงชื่อผิด หรือต้องการเริ่มต้นใหม่</p>
+      </div>
+    </div>
+
+    <!-- จัดการ Dropdown -->
+    <div class="card">
+      <div class="card-hdr"><h2>🗂️ จัดการตัวเลือก Dropdown</h2><p>เพิ่ม/ลบ รายละเอียด · ผู้ขอเบิก · ผู้ให้เบิก</p></div>
+      <div class="card-body">
+        <div style="margin-bottom:16px;">
+          <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px;">📋 รายละเอียดการใช้รถ</div>
+          <div id="ddList-detail" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:28px;"></div>
+          <div style="display:flex;gap:6px;">
+            <input type="text" id="ddInput-detail" placeholder="เพิ่มรายละเอียด..." style="flex:1;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:'Sarabun',sans-serif;outline:none;">
+            <button class="btn btn-primary btn-sm" onclick="ddAdd('detail')">+ เพิ่ม</button>
+          </div>
+        </div>
+        <div class="dvd" style="margin:12px 0;"></div>
+        <div style="margin-bottom:16px;">
+          <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px;">👤 ผู้ขอเบิก</div>
+          <div id="ddList-req" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:28px;"></div>
+          <div style="display:flex;gap:6px;">
+            <input type="text" id="ddInput-req" placeholder="เพิ่มชื่อผู้ขอเบิก..." style="flex:1;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:'Sarabun',sans-serif;outline:none;">
+            <button class="btn btn-primary btn-sm" onclick="ddAdd('req')">+ เพิ่ม</button>
+          </div>
+        </div>
+        <div class="dvd" style="margin:12px 0;"></div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px;">👤 ผู้ให้เบิก</div>
+          <div id="ddList-apr" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:28px;"></div>
+          <div style="display:flex;gap:6px;">
+            <input type="text" id="ddInput-apr" placeholder="เพิ่มชื่อผู้ให้เบิก..." style="flex:1;padding:8px 10px;border:1.5px solid var(--gray2);border-radius:8px;font-size:13px;font-family:'Sarabun',sans-serif;outline:none;">
+            <button class="btn btn-primary btn-sm" onclick="ddAdd('apr')">+ เพิ่ม</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -589,6 +643,14 @@ function ok(data) {
         <button class="btn btn-outline btn-sm" onclick="saveApiKey()">💾 บันทึก API Key</button>
         <div id="apiKeyStatus" style="font-size:11px;margin-top:6px;color:var(--green);display:none;">✅ บันทึกแล้ว</div>
         <p style="font-size:11px;color:var(--gray);margin-top:8px;">API Key เก็บในเครื่องนี้เท่านั้น (localStorage) ไม่ได้ส่งที่ใดนอกจาก Anthropic</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hdr"><h2>📄 รายงานการใช้รถ</h2><p>พิมพ์ / บันทึก PDF</p></div>
+      <div class="card-body">
+        <p style="font-size:12px;color:var(--gray);margin-bottom:12px;">เปิดหน้ารายงานพร้อมตัวกรอง เดือน · ช่วงวันที่ · ผู้ขอเบิก แล้วพิมพ์หรือบันทึกเป็น PDF ได้เลย</p>
+        <button class="btn btn-primary btn-full" onclick="openReport()">📄 เปิดหน้ารายงาน</button>
       </div>
     </div>
 
@@ -686,6 +748,9 @@ function init() {
   const now = new Date();
   document.getElementById('fMonth').value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
 
+  // Render dropdown manager tags
+  ddRenderAll();
+
   if (scriptUrl) {
     checkTodayStatus();
   } else {
@@ -702,6 +767,7 @@ function updateNowDisplay() {
 
 // ════ TABS ════
 function switchTab(tab) {
+  if (tab === 'report') { openReport(); return; }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + tab).classList.add('active');
@@ -742,6 +808,13 @@ function saveApiKey() {
   setTimeout(() => el.style.display = 'none', 2500);
 }
 
+function resetCache() {
+  if (!confirm('ล้างข้อมูลที่บันทึกไว้ในเครื่องทั้งหมด (URL, API Key, Dropdown) แล้วรีโหลดหน้าใหม่?')) return;
+  localStorage.removeItem('car2fc4495');
+  localStorage.removeItem('car2fc_dd');
+  location.reload();
+}
+
 function saveSetting() {
   localStorage.setItem('car2fc4495', JSON.stringify({ url: scriptUrl, apiKey }));
 }
@@ -751,18 +824,92 @@ function setConn(ok) {
   document.getElementById('connLbl').textContent = ok ? 'เชื่อมต่อแล้ว' : 'ยังไม่เชื่อมต่อ';
 }
 
+
+// ════ DROPDOWN MANAGER ════
+// เก็บ custom options ใน localStorage
+const DD_KEY = 'car2fc_dd';
+
+function ddLoad() {
+  try { return JSON.parse(localStorage.getItem(DD_KEY)) || { detail:[], req:[], apr:[] }; }
+  catch(e) { return { detail:[], req:[], apr:[] }; }
+}
+function ddSave(data) { localStorage.setItem(DD_KEY, JSON.stringify(data)); }
+
+function ddRenderAll() {
+  const data = ddLoad();
+  const DEF = {
+    detail: ['ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์'],
+    req:    ['รวิวรรณ'],
+    apr:    ['รวิวรรณ'],
+  };
+  ['detail','req','apr'].forEach(key => {
+    const all = [...new Set([...DEF[key], ...data[key]])];
+    const container = document.getElementById('ddList-' + key);
+    if (!container) return;
+    container.innerHTML = all.map(v => `
+      <span style="display:inline-flex;align-items:center;gap:4px;background:#EEF2F7;
+        border:1px solid var(--gray2);border-radius:20px;padding:4px 10px;font-size:12px;font-weight:600;">
+        ${v}
+        ${DEF[key].includes(v) ? '' : `<button onclick="ddRemove('${key}','${encodeURIComponent(v)}')"
+          style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;line-height:1;padding:0 0 0 2px;">×</button>`}
+      </span>`).join('');
+  });
+}
+
+function ddAdd(key) {
+  const inp = document.getElementById('ddInput-' + key);
+  const val = inp.value.trim();
+  if (!val) { inp.focus(); return; }
+  const data = ddLoad();
+  if (!data[key].includes(val)) {
+    data[key].push(val);
+    ddSave(data);
+    ddRenderAll();
+    applyDdToDropdowns();
+    toast('✅ เพิ่ม "' + val + '" แล้ว', 'ok');
+  } else {
+    toast('มีชื่อนี้อยู่แล้ว', '');
+  }
+  inp.value = '';
+}
+
+function ddRemove(key, encodedVal) {
+  const val = decodeURIComponent(encodedVal);
+  const data = ddLoad();
+  data[key] = data[key].filter(v => v !== val);
+  ddSave(data);
+  ddRenderAll();
+  applyDdToDropdowns();
+  toast('ลบ "' + val + '" แล้ว', '');
+}
+
+function applyDdToDropdowns() {
+  const data = ddLoad();
+  const DEF_DETAIL = ['ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์'];
+  const DEF_REQ    = ['รวิวรรณ'];
+  const DEF_APR    = ['รวิวรรณ'];
+  populateDropdown('recDetail',    [...new Set([...DEF_DETAIL, ...data.detail])], true);
+  populateDropdown('recRequester', [...new Set([...DEF_REQ,    ...data.req])],    true);
+  populateDropdown('recApprover',  [...new Set([...DEF_APR,    ...data.apr])],    true);
+  populateDropdown('fRequester',   [...new Set([...DEF_REQ,    ...data.req])],    false);
+}
+
 // ════ META (dropdowns) ════
 async function loadMeta() {
+  // Apply localStorage custom options first (instant)
+  applyDdToDropdowns();
   if (!scriptUrl) return;
   try {
     const d = await callGS({ action: 'getMeta' });
+    const ddData = ddLoad();
     const DEF_DETAIL = ['ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์'];
-    const DEF_REQ = ['รวิรรณ'];
-    const DEF_APR = ['รวิรรณ'];
-    populateDropdown('recDetail',    [...new Set([...DEF_DETAIL, ...(d.details||[])])],    true);
-    populateDropdown('recRequester', [...new Set([...DEF_REQ,    ...(d.requesters||[])])], true);
-    populateDropdown('recApprover',  [...new Set([...DEF_APR,    ...(d.approvers||[])])],  true);
-    populateDropdown('fRequester',   [...new Set([...(d.requesters||[])])], false);
+    const DEF_REQ = ['รวิวรรณ'];
+    const DEF_APR = ['รวิวรรณ'];
+    // Merge: default + localStorage + from Sheet
+    populateDropdown('recDetail',    [...new Set([...DEF_DETAIL, ...ddData.detail, ...(d.details||[])])],    true);
+    populateDropdown('recRequester', [...new Set([...DEF_REQ,    ...ddData.req,    ...(d.requesters||[])])], true);
+    populateDropdown('recApprover',  [...new Set([...DEF_APR,    ...ddData.apr,    ...(d.approvers||[])])],  true);
+    populateDropdown('fRequester',   [...new Set([...DEF_REQ,    ...ddData.req,    ...(d.requesters||[])])], false);
   } catch(e) {}
 }
 
@@ -889,11 +1036,11 @@ async function saveRecord(type) {
 async function loadHistory() {
   if (!scriptUrl) {
     document.getElementById('histBody').innerHTML =
-      '<tr><td colspan="11"><div class="empty">⚙️ ยังไม่ได้เชื่อมต่อ Sheet</div></td></tr>';
+      '<tr><td colspan="12"><div class="empty">⚙️ ยังไม่ได้เชื่อมต่อ Sheet</div></td></tr>';
     return;
   }
   document.getElementById('histBody').innerHTML =
-    '<tr><td colspan="11"><div class="loader"><div class="loader-spin"></div><br>กำลังโหลด...</div></td></tr>';
+    '<tr><td colspan="12"><div class="loader"><div class="loader-spin"></div><br>กำลังโหลด...</div></td></tr>';
   const month = document.getElementById('fMonth').value;
   const req   = document.getElementById('fRequester').value;
   const params = { action:'getData' };
@@ -905,7 +1052,7 @@ async function loadHistory() {
     renderHistory();
   } catch(e) {
     document.getElementById('histBody').innerHTML =
-      `<tr><td colspan="11"><div class="empty">❌ ${e.message}</div></td></tr>`;
+      `<tr><td colspan="12"><div class="empty">❌ ${e.message}</div></td></tr>`;
   }
 }
 
@@ -928,7 +1075,7 @@ function renderHistory() {
   document.getElementById('sMile').textContent  = totalMile.toLocaleString();
   document.getElementById('sPending').textContent = pending;
   if (rows.length===0) {
-    document.getElementById('histBody').innerHTML = '<tr><td colspan="11"><div class="empty">📭 ไม่พบข้อมูล</div></td></tr>';
+    document.getElementById('histBody').innerHTML = '<tr><td colspan="12"><div class="empty">📭 ไม่พบข้อมูล</div></td></tr>';
     return;
   }
   document.getElementById('histBody').innerHTML = rows.map((r,i) => {
@@ -947,6 +1094,7 @@ function renderHistory() {
       <td class="mono" style="font-size:10px;">${r['เวลาคืน']||'—'}</td>
       <td class="mono r" style="font-weight:700;color:var(--green);">${dist}</td>
       <td><span class="badge ${done?'badge-done':'badge-out'}">${done?'ครบ':'รอกลับ'}</span></td>
+      <td style="font-size:11px;color:var(--gray);max-width:120px;">${r['หมายเหตุ']||''}</td>
       <td><button class="btn btn-outline btn-sm" onclick="startEdit(${i})" style="font-size:10px;padding:4px 8px;">✏️</button></td>
     </tr>`;
   }).join('');
@@ -965,7 +1113,8 @@ function startEdit(i) {
     <td><input class="edit-input" id="e-to-${i}" value="${r['เวลาเบิก']||''}" style="width:115px;"></td>
     <td><input class="edit-input r" id="e-mb-${i}" type="number" value="${r['เลขไมล์กลับ']||''}" style="width:72px;text-align:right;"></td>
     <td><input class="edit-input" id="e-tb-${i}" value="${r['เวลาคืน']||''}" style="width:115px;"></td>
-    <td></td><td></td>
+    <td></td>
+    <td><input class="edit-input" id="e-note-${i}" value="${r['หมายเหตุ']||''}" style="min-width:90px;"></td>
     <td style="display:flex;gap:4px;">
       <button class="btn btn-green btn-sm" onclick="saveEdit(${i})" style="font-size:10px;padding:4px 8px;">💾</button>
       <button class="btn btn-outline btn-sm" onclick="renderHistory()" style="font-size:10px;padding:4px 8px;">✕</button>
@@ -984,6 +1133,7 @@ async function saveEdit(i) {
       'เวลาเบิก':                document.getElementById(`e-to-${i}`)?.value||'',
       'เลขไมล์กลับ':            document.getElementById(`e-mb-${i}`)?.value||'',
       'เวลาคืน':                 document.getElementById(`e-tb-${i}`)?.value||'',
+      'หมายเหตุ':                document.getElementById(`e-note-${i}`)?.value||'',
     });
     if (d.ok) { toast('✅ บันทึกสำเร็จ!','ok'); loadHistory(); }
     else throw new Error(d.error||'ไม่สำเร็จ');
@@ -1097,6 +1247,11 @@ function updateShareUrl() {
   const url = window.location.href.split('?')[0] + '?url=' + encodeURIComponent(scriptUrl);
   document.getElementById('shareUrl').value = url;
 }
+function openReport() {
+  const url = 'report.html' + (scriptUrl ? '?url=' + encodeURIComponent(scriptUrl) : '');
+  window.open(url, '_blank');
+}
+
 function copyShareUrl() { copyText(document.getElementById('shareUrl').value, 'shareOk'); }
 function copyScript()   { copyText(document.getElementById('scriptCode').textContent, 'copyOk'); }
 function copyText(txt, feedbackId) {
