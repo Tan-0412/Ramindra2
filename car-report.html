@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>รายงานการใช้รถ - การเงินสุวินทวงศ์</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ===== SCREEN STYLES ===== */
+:root {
+  --navy: #0f1f3d;
+  --navy-light: #1a3260;
+  --gold: #c9a84c;
+  --gold-light: #f0d080;
+  --cream: #faf7f0;
+  --gray: #8a8a8a;
+  --gray-light: #e8e4da;
+  --success: #2e7d52;
+  --white: #ffffff;
+  --shadow: 0 4px 24px rgba(15,31,61,0.12);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Sarabun', sans-serif;
+  background: #eef2f7;
+  color: var(--navy);
+  min-height: 100vh;
+}
+
+/* ===== CONTROL PANEL ===== */
+.control-panel {
+  background: var(--navy);
+  padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+}
+.panel-header {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.panel-logo {
+  width: 40px; height: 40px;
+  background: var(--gold);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.panel-title h1 { font-size: 16px; font-weight: 700; color: var(--white); }
+.panel-title p { font-size: 11px; color: rgba(240,208,128,0.85); }
+
+.panel-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+.btn-print {
+  background: var(--gold);
+  color: var(--navy);
+  border: none;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'Sarabun', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+.btn-print:hover { background: var(--gold-light); }
+.btn-back {
+  background: rgba(255,255,255,0.1);
+  color: var(--white);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-family: 'Sarabun', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-back:hover { background: rgba(255,255,255,0.15); }
+
+/* ===== FILTER CARD ===== */
+.filter-wrap {
+  max-width: 1100px;
+  margin: 20px auto;
+  padding: 0 16px;
+}
+.filter-card {
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.filter-header {
+  background: linear-gradient(135deg, var(--navy), var(--navy-light));
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.filter-header h2 { font-size: 14px; font-weight: 600; color: var(--white); }
+
+.filter-body {
+  padding: 20px;
+}
+.filter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr auto;
+  gap: 12px;
+  align-items: flex-end;
+}
+@media (max-width: 768px) {
+  .filter-grid { grid-template-columns: 1fr 1fr; }
+  .filter-grid .btn-apply { grid-column: span 2; }
+}
+
+.fgroup { display: flex; flex-direction: column; gap: 5px; }
+.fgroup label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.fgroup input, .fgroup select {
+  border: 1.5px solid var(--gray-light);
+  border-radius: 9px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: 'Sarabun', sans-serif;
+  color: var(--navy);
+  background: #faf9f7;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.fgroup input:focus, .fgroup select:focus {
+  border-color: var(--gold);
+  background: var(--white);
+}
+.btn-apply {
+  background: var(--navy);
+  color: var(--white);
+  border: none;
+  border-radius: 9px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'Sarabun', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btn-apply:hover { background: var(--navy-light); }
+.btn-reset {
+  background: transparent;
+  color: var(--gray);
+  border: 1.5px solid var(--gray-light);
+  border-radius: 9px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-family: 'Sarabun', sans-serif;
+  cursor: pointer;
+}
+.btn-reset:hover { border-color: var(--navy); color: var(--navy); }
+
+/* ===== SUMMARY CARDS ===== */
+.summary-wrap {
+  max-width: 1100px;
+  margin: 0 auto 16px;
+  padding: 0 16px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (max-width: 600px) { .summary-wrap { grid-template-columns: 1fr 1fr; } }
+
+.summary-card {
+  background: var(--white);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  overflow: hidden;
+}
+.summary-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--gold);
+}
+.summary-card .s-icon { font-size: 24px; margin-bottom: 4px; }
+.summary-card .s-label { font-size: 11px; color: var(--gray); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+.summary-card .s-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--navy);
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: -0.5px;
+}
+.summary-card .s-unit { font-size: 11px; color: var(--gray); }
+
+/* ===== REPORT TABLE ===== */
+.report-wrap {
+  max-width: 1100px;
+  margin: 0 auto 30px;
+  padding: 0 16px;
+}
+.report-card {
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.report-header {
+  background: linear-gradient(135deg, var(--navy), var(--navy-light));
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.report-header h2 { font-size: 14px; font-weight: 600; color: var(--white); }
+.record-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--gold-light);
+  background: rgba(201,168,76,0.15);
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(201,168,76,0.3);
+}
+
+.table-scroll { overflow-x: auto; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 800px;
+}
+thead { background: #f5f3ee; }
+th {
+  padding: 11px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border-bottom: 2px solid var(--gray-light);
+  white-space: nowrap;
+}
+th.right { text-align: right; }
+tbody tr { border-bottom: 1px solid var(--gray-light); transition: background 0.15s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: rgba(201,168,76,0.05); }
+tbody tr.alt { background: #fdfcfa; }
+td { padding: 10px 14px; vertical-align: middle; }
+td.right { text-align: right; }
+td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+td.date { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--gray); }
+td.mile { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 500; color: var(--navy-light); }
+td.total-mile {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--success);
+}
+td.detail { max-width: 200px; font-size: 12px; }
+
+.badge-complete {
+  display: inline-block;
+  background: rgba(46,125,82,0.12);
+  color: var(--success);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.badge-partial {
+  display: inline-block;
+  background: rgba(201,168,76,0.15);
+  color: #8a6a00;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ===== GRAND TOTAL ROW ===== */
+tfoot tr { background: #f0ead8 !important; }
+tfoot td {
+  padding: 12px 14px;
+  font-weight: 700;
+  font-size: 13px;
+  border-top: 2px solid var(--gold);
+}
+tfoot .total-label { color: var(--navy); }
+tfoot .total-val {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  color: var(--navy);
+}
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--gray);
+}
+.empty-state .icon { font-size: 52px; margin-bottom: 12px; }
+.empty-state p { font-size: 14px; }
+
+/* ===== NO DATA / ERROR ===== */
+.alert-box {
+  background: rgba(201,168,76,0.1);
+  border: 1px solid rgba(201,168,76,0.4);
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-size: 14px;
+  color: var(--navy);
+  margin: 16px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* ===== SCRIPT URL SETUP ===== */
+.setup-box {
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 32px;
+  text-align: center;
+  max-width: 500px;
+  margin: 40px auto;
+}
+.setup-box .icon { font-size: 48px; margin-bottom: 16px; }
+.setup-box h2 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.setup-box p { font-size: 13px; color: var(--gray); margin-bottom: 20px; line-height: 1.6; }
+.setup-box input {
+  width: 100%;
+  border: 1.5px solid var(--gray-light);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-family: 'Sarabun', sans-serif;
+  margin-bottom: 12px;
+  outline: none;
+}
+.setup-box input:focus { border-color: var(--gold); }
+.setup-box button {
+  width: 100%;
+  background: var(--navy);
+  color: var(--white);
+  border: none;
+  border-radius: 10px;
+  padding: 13px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: 'Sarabun', sans-serif;
+  cursor: pointer;
+}
+
+/* ===== LOADING ===== */
+.loading-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15,31,61,0.5);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+}
+.loading-overlay.show { display: flex; }
+.spinner {
+  width: 48px; height: 48px;
+  border: 4px solid rgba(201,168,76,0.3);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { color: var(--white); font-size: 14px; font-weight: 500; }
+
+/* ===========================
+   PRINT STYLES
+   =========================== */
+@media print {
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+  body { background: white !important; font-size: 11pt; }
+
+  .control-panel,
+  .filter-wrap,
+  .no-print { display: none !important; }
+
+  .summary-wrap {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 8px !important;
+    margin: 0 0 12px !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .summary-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px 12px;
+    box-shadow: none;
+    break-inside: avoid;
+  }
+  .summary-card::before { height: 2px; }
+  .summary-card .s-value { font-size: 16pt; }
+
+  .report-wrap {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+  .report-card {
+    border-radius: 0;
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+  .report-header {
+    background: var(--navy) !important;
+    -webkit-print-color-adjust: exact;
+  }
+
+  table { font-size: 9pt; min-width: unset; }
+  th { font-size: 8pt; padding: 7px 10px; }
+  td { padding: 6px 10px; }
+
+  tbody tr:nth-child(even) { background: #fafaf8 !important; }
+  tfoot tr { background: #f0ead8 !important; }
+
+  /* Print header */
+  .print-header {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--navy);
+  }
+
+  @page {
+    size: A4 landscape;
+    margin: 1.2cm 1.5cm;
+  }
+}
+
+.print-header { display: none; }
+</style>
+</head>
+<body>
+
+<!-- CONTROL PANEL (screen only) -->
+<div class="control-panel no-print">
+  <div class="panel-header">
+    <div class="panel-logo">🚗</div>
+    <div class="panel-title">
+      <h1>รายงานการใช้รถ</h1>
+      <p>บันทึกรถใช้งานการเงิน · สาขาสุวินทวงศ์ · 2ฒฉ 4495</p>
+    </div>
+    <div class="panel-actions">
+      <button class="btn-back" onclick="window.history.back()">← กลับ</button>
+      <button class="btn-print" onclick="window.print()">🖨️ พิมพ์ / PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- FILTERS (screen only) -->
+<div class="filter-wrap no-print">
+  <div class="filter-card">
+    <div class="filter-header">
+      <span>🔍</span>
+      <h2>ตัวกรองข้อมูล</h2>
+    </div>
+    <div class="filter-body">
+      <div class="filter-grid">
+        <div class="fgroup">
+          <label>เดือน</label>
+          <input type="month" id="fMonth" onchange="onMonthChange()">
+        </div>
+        <div class="fgroup">
+          <label>วันที่เริ่มต้น</label>
+          <input type="date" id="fDateFrom">
+        </div>
+        <div class="fgroup">
+          <label>วันที่สิ้นสุด</label>
+          <input type="date" id="fDateTo">
+        </div>
+        <div class="fgroup">
+          <label>ผู้ขอเบิก</label>
+          <select id="fRequester">
+            <option value="">-- ทั้งหมด --</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-end;">
+          <button class="btn-apply" onclick="applyFilter()">🔍 กรอง</button>
+          <button class="btn-reset" onclick="resetFilter()">✕ ล้าง</button>
+        </div>
+      </div>
+      <div id="filterStatus" style="margin-top:12px;font-size:12px;color:var(--gray);"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PRINT HEADER (print only) -->
+<div class="print-header">
+  <div style="font-size:9pt;color:#666;margin-bottom:4px;">กรมส่งเสริมการเกษตร · การเงินสุวินทวงศ์</div>
+  <div style="font-size:16pt;font-weight:800;color:#0f1f3d;">รายงานการใช้รถยนต์</div>
+  <div style="font-size:10pt;color:#444;margin-top:4px;">ทะเบียน 2ฒฉ 4495 · สาขาสุวินทวงศ์</div>
+  <div id="printDateRange" style="font-size:9pt;color:#666;margin-top:6px;"></div>
+</div>
+
+<!-- SUMMARY -->
+<div class="summary-wrap" id="summaryWrap" style="display:none;">
+  <div class="summary-card">
+    <div class="s-icon">📋</div>
+    <div class="s-label">รายการทั้งหมด</div>
+    <div class="s-value" id="sTotal">0</div>
+    <div class="s-unit">ครั้ง</div>
+  </div>
+  <div class="summary-card">
+    <div class="s-icon">✅</div>
+    <div class="s-label">บันทึกครบ</div>
+    <div class="s-value" id="sComplete">0</div>
+    <div class="s-unit">ครั้ง</div>
+  </div>
+  <div class="summary-card">
+    <div class="s-icon">📏</div>
+    <div class="s-label">ระยะทางรวม</div>
+    <div class="s-value" id="sMileTotal">0</div>
+    <div class="s-unit">กิโลเมตร</div>
+  </div>
+  <div class="summary-card">
+    <div class="s-icon">👤</div>
+    <div class="s-label">ผู้ใช้รถ</div>
+    <div class="s-value" id="sUsers">0</div>
+    <div class="s-unit">คน</div>
+  </div>
+</div>
+
+<!-- REPORT TABLE -->
+<div class="report-wrap">
+  <div class="report-card" id="reportCard">
+
+    <!-- Setup state -->
+    <div id="setupState" class="setup-box">
+      <div class="icon">🔗</div>
+      <h2>เชื่อมต่อ Google Sheet</h2>
+      <p>ใส่ Apps Script URL เพื่อดึงข้อมูลการใช้รถ<br>
+         (URL เดียวกับที่ตั้งค่าในแอปบันทึก)</p>
+      <input type="url" id="setupUrl" placeholder="https://script.google.com/macros/s/..." value="">
+      <button onclick="connectSheet()">เชื่อมต่อและโหลดข้อมูล</button>
+    </div>
+
+    <!-- Report state -->
+    <div id="reportState" style="display:none;">
+      <div class="report-header">
+        <h2 id="reportTitle">รายงานการใช้รถ</h2>
+        <span class="record-count" id="recordCount">0 รายการ</span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:36px;">#</th>
+              <th>วันที่</th>
+              <th>รายละเอียดการใช้รถ</th>
+              <th>ผู้ขอเบิก</th>
+              <th>ผู้ให้เบิก</th>
+              <th class="right">เลขไมล์ไป</th>
+              <th>เวลาเบิก</th>
+              <th class="right">เลขไมล์กลับ</th>
+              <th>เวลาคืน</th>
+              <th class="right">รวม (กม.)</th>
+              <th>สถานะ</th>
+              <th>หมายเหตุ</th>
+            </tr>
+          </thead>
+          <tbody id="reportBody"></tbody>
+          <tfoot id="reportFoot"></tfoot>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">กำลังโหลดข้อมูล...</div>
+</div>
+
+<script>
+// ===== STATE =====
+let allData = [];
+let filteredData = [];
+let scriptUrl = '';
+
+// ===== INIT =====
+function init() {
+  // Load settings from localStorage (shared with main app)
+  const saved = localStorage.getItem('carTrackerSettings');
+  if (saved) {
+    try {
+      const s = JSON.parse(saved);
+      scriptUrl = s.scriptUrl || '';
+      if (scriptUrl) {
+        document.getElementById('setupUrl').value = scriptUrl;
+      }
+      // Populate requester dropdown from settings
+      if (s.names && s.names.length) {
+        const sel = document.getElementById('fRequester');
+        s.names.forEach(n => {
+          const opt = document.createElement('option');
+          opt.value = n; opt.textContent = n;
+          sel.appendChild(opt);
+        });
+      }
+    } catch(e) {}
+  }
+
+  // Set default month filter to current month
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  document.getElementById('fMonth').value = `${yyyy}-${mm}`;
+
+  // Auto-load if URL already saved
+  if (scriptUrl) {
+    loadData();
+  }
+}
+
+function onMonthChange() {
+  const m = document.getElementById('fMonth').value;
+  if (!m) return;
+  const [y, mo] = m.split('-');
+  const first = `${y}-${mo}-01`;
+  const last = new Date(y, mo, 0);
+  const lastStr = `${y}-${mo}-${String(last.getDate()).padStart(2,'0')}`;
+  document.getElementById('fDateFrom').value = first;
+  document.getElementById('fDateTo').value = lastStr;
+}
+
+// ===== CONNECT =====
+function connectSheet() {
+  const url = document.getElementById('setupUrl').value.trim();
+  if (!url) { alert('กรุณาใส่ Apps Script URL'); return; }
+  scriptUrl = url;
+  // Save to localStorage
+  const saved = localStorage.getItem('carTrackerSettings');
+  let s = saved ? JSON.parse(saved) : {};
+  s.scriptUrl = url;
+  localStorage.setItem('carTrackerSettings', JSON.stringify(s));
+  loadData();
+}
+
+// ===== LOAD DATA =====
+async function loadData() {
+  if (!scriptUrl) return;
+  document.getElementById('loadingOverlay').classList.add('show');
+  try {
+    const res = await fetch(scriptUrl);
+    const data = await res.json();
+    if (data.status === 'ok') {
+      allData = data.data || [];
+      document.getElementById('setupState').style.display = 'none';
+      document.getElementById('reportState').style.display = 'block';
+      document.getElementById('summaryWrap').style.display = 'grid';
+
+      // Populate requester dropdown from actual data
+      populateRequesterFilter();
+
+      applyFilter();
+    } else {
+      alert('เกิดข้อผิดพลาด: ' + data.message);
+    }
+  } catch(err) {
+    alert('โหลดข้อมูลไม่สำเร็จ: ' + err.message);
+  }
+  document.getElementById('loadingOverlay').classList.remove('show');
+}
+
+function populateRequesterFilter() {
+  const sel = document.getElementById('fRequester');
+  const existing = Array.from(sel.options).map(o => o.value).filter(Boolean);
+  const names = [...new Set(allData.map(r => r.requester).filter(Boolean))];
+  names.forEach(n => {
+    if (!existing.includes(n)) {
+      const opt = document.createElement('option');
+      opt.value = n; opt.textContent = n;
+      sel.appendChild(opt);
+    }
+  });
+}
+
+// ===== FILTER =====
+function applyFilter() {
+  const dateFrom = document.getElementById('fDateFrom').value;
+  const dateTo = document.getElementById('fDateTo').value;
+  const requester = document.getElementById('fRequester').value;
+
+  filteredData = allData.filter(row => {
+    const rowDate = row.date || '';
+    if (dateFrom && rowDate < dateFrom) return false;
+    if (dateTo && rowDate > dateTo) return false;
+    if (requester && row.requester !== requester) return false;
+    return true;
+  });
+
+  // Update filter status
+  let status = '';
+  if (dateFrom || dateTo || requester) {
+    const parts = [];
+    if (dateFrom && dateTo) parts.push(`${formatDateDisplay(dateFrom)} ถึง ${formatDateDisplay(dateTo)}`);
+    else if (dateFrom) parts.push(`ตั้งแต่ ${formatDateDisplay(dateFrom)}`);
+    else if (dateTo) parts.push(`ถึง ${formatDateDisplay(dateTo)}`);
+    if (requester) parts.push(`ผู้ขอเบิก: ${requester}`);
+    status = `🔍 กรองตาม: ${parts.join(' · ')}`;
+  }
+  document.getElementById('filterStatus').textContent = status;
+
+  // Update print date range
+  const drParts = [];
+  if (dateFrom) drParts.push(formatDateDisplay(dateFrom));
+  if (dateTo) drParts.push(formatDateDisplay(dateTo));
+  document.getElementById('printDateRange').textContent =
+    drParts.length ? `ช่วงวันที่: ${drParts.join(' – ')}` : 'ข้อมูลทั้งหมด';
+
+  // Update report title
+  const month = document.getElementById('fMonth').value;
+  if (month) {
+    const [y, m] = month.split('-');
+    const monthNames = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+                        'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+    document.getElementById('reportTitle').textContent =
+      `รายงานประจำเดือน ${monthNames[parseInt(m)]} ${parseInt(y)+543}`;
+  } else {
+    document.getElementById('reportTitle').textContent = 'รายงานการใช้รถ';
+  }
+
+  renderReport();
+}
+
+function resetFilter() {
+  document.getElementById('fMonth').value = '';
+  document.getElementById('fDateFrom').value = '';
+  document.getElementById('fDateTo').value = '';
+  document.getElementById('fRequester').value = '';
+  document.getElementById('filterStatus').textContent = '';
+  filteredData = [...allData];
+  renderReport();
+}
+
+// ===== RENDER =====
+function renderReport() {
+  updateSummary();
+  const tbody = document.getElementById('reportBody');
+  const tfoot = document.getElementById('reportFoot');
+  document.getElementById('recordCount').textContent = `${filteredData.length} รายการ`;
+
+  if (!filteredData.length) {
+    tbody.innerHTML = `<tr><td colspan="12">
+      <div class="empty-state">
+        <div class="icon">📭</div>
+        <p>ไม่พบข้อมูลในช่วงที่เลือก</p>
+      </div>
+    </td></tr>`;
+    tfoot.innerHTML = '';
+    return;
+  }
+
+  let grandTotal = 0;
+  let grandMileOut = '';
+  let grandMileBack = '';
+
+  tbody.innerHTML = filteredData.map((row, idx) => {
+    const mileOut = row.mileOut ? parseInt(row.mileOut) : null;
+    const mileBack = row.mileBack ? parseInt(row.mileBack) : null;
+    const dist = (mileOut !== null && mileBack !== null && mileBack >= mileOut)
+      ? mileBack - mileOut : null;
+    if (dist !== null) grandTotal += dist;
+    if (mileOut !== null && (grandMileOut === '' || mileOut < parseInt(grandMileOut))) grandMileOut = String(mileOut);
+    if (mileBack !== null && (grandMileBack === '' || mileBack > parseInt(grandMileBack))) grandMileBack = String(mileBack);
+
+    const complete = mileOut !== null && mileBack !== null;
+    const alt = idx % 2 === 1 ? ' class="alt"' : '';
+
+    return `<tr${alt}>
+      <td style="color:var(--gray);font-size:11px;">${idx+1}</td>
+      <td class="date">${formatDateDisplay(row.date)}</td>
+      <td class="detail">${row.detail || '-'}</td>
+      <td style="font-size:12px;">${row.requester || '-'}</td>
+      <td style="font-size:12px;">${row.approver || '-'}</td>
+      <td class="mile right">${mileOut !== null ? mileOut.toLocaleString() : '-'}</td>
+      <td class="date" style="font-size:11px;">${row.timeOut || '-'}</td>
+      <td class="mile right">${mileBack !== null ? mileBack.toLocaleString() : '-'}</td>
+      <td class="date" style="font-size:11px;">${row.timeBack || '-'}</td>
+      <td class="total-mile right">${dist !== null ? dist.toLocaleString() : '-'}</td>
+      <td>${complete
+        ? '<span class="badge-complete">ครบ</span>'
+        : '<span class="badge-partial">ยังไม่กลับ</span>'}</td>
+      <td style="font-size:11px;color:var(--gray);">${row.note || ''}</td>
+    </tr>`;
+  }).join('');
+
+  // Footer total row
+  tfoot.innerHTML = `<tr>
+    <td colspan="5" class="total-label">รวมทั้งหมด (${filteredData.length} รายการ)</td>
+    <td class="total-val right">${grandMileOut ? parseInt(grandMileOut).toLocaleString() : '-'}</td>
+    <td></td>
+    <td class="total-val right">${grandMileBack ? parseInt(grandMileBack).toLocaleString() : '-'}</td>
+    <td></td>
+    <td class="total-val right" style="color:var(--success);">${grandTotal.toLocaleString()}</td>
+    <td colspan="2"></td>
+  </tr>`;
+}
+
+function updateSummary() {
+  const total = filteredData.length;
+  const complete = filteredData.filter(r => r.mileOut && r.mileBack).length;
+  let mileSum = 0;
+  filteredData.forEach(r => {
+    if (r.mileOut && r.mileBack) {
+      const d = parseInt(r.mileBack) - parseInt(r.mileOut);
+      if (d > 0) mileSum += d;
+    }
+  });
+  const users = new Set(filteredData.map(r => r.requester).filter(Boolean)).size;
+
+  document.getElementById('sTotal').textContent = total.toLocaleString();
+  document.getElementById('sComplete').textContent = complete.toLocaleString();
+  document.getElementById('sMileTotal').textContent = mileSum.toLocaleString();
+  document.getElementById('sUsers').textContent = users.toLocaleString();
+}
+
+// ===== HELPERS =====
+function formatDateDisplay(dateStr) {
+  if (!dateStr) return '-';
+  try {
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('th-TH', {
+      year: 'numeric', month: 'short', day: 'numeric'
+    });
+  } catch { return dateStr; }
+}
+
+// ===== START =====
+init();
+// Trigger month filter on load
+onMonthChange();
+</script>
+
+</body>
+</html>
