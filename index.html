@@ -280,7 +280,7 @@ pre.code{
         <div class="frow">
           <label>รายละเอียดการใช้รถ</label>
           <select id="recDetail" onchange="checkCustom('recDetail','recDetailCustom')">
-            <option value="ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์">ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์</option>
+            <option value="ไปกลับ รามอินทรา ก.ม.2 - สุวินทวงศ์">ไปกลับ รามอินทรา ก.ม.2 - สุวินทวงศ์</option>
             <option value="__custom__">อื่นๆ (ระบุเอง)</option>
           </select>
           <input type="text" id="recDetailCustom" placeholder="ระบุรายละเอียด..." style="display:none;margin-top:6px;">
@@ -865,7 +865,7 @@ function ddSave(data) { localStorage.setItem(DD_KEY, JSON.stringify(data)); }
 function ddRenderAll() {
   const data = ddLoad();
   const DEF = {
-    detail: ['ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์'],
+    detail: ['ไปกลับ รามอินทรา ก.ม.2 - สุวินทวงศ์'],
     req:    ['รวิวรรณ'],
     apr:    ['รวิวรรณ'],
   };
@@ -912,7 +912,7 @@ function ddRemove(key, encodedVal) {
 
 function applyDdToDropdowns() {
   const data = ddLoad();
-  const DEF_DETAIL = ['ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์'];
+  const DEF_DETAIL = ['ไปกลับ รามอินทรา ก.ม.2 - สุวินทวงศ์'];
   const DEF_REQ    = ['รวิวรรณ'];
   const DEF_APR    = ['รวิวรรณ'];
   populateDropdown('recDetail',    [...new Set([...DEF_DETAIL, ...data.detail])], true);
@@ -929,7 +929,7 @@ async function loadMeta() {
   try {
     const d = await callGS({ action: 'getMeta' });
     const ddData = ddLoad();
-    const DEF_DETAIL = ['ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์'];
+    const DEF_DETAIL = ['ไปกลับ รามอินทรา ก.ม.2 - สุวินทวงศ์'];
     const DEF_REQ = ['รวิวรรณ'];
     const DEF_APR = ['รวิวรรณ'];
     // Merge: default + localStorage + from Sheet
