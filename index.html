@@ -668,6 +668,32 @@ function ok(data) {
   </div>
 </div>
 
+<!-- SUGGEST MODAL -->
+<div class="modal-overlay" id="suggestModal">
+  <div style="background:var(--navy);border-radius:20px;overflow:hidden;width:min(94vw,420px);">
+    <div style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:10px;">
+      <span style="font-size:20px;" id="suggestIcon">💡</span>
+      <div>
+        <div style="color:#fff;font-size:14px;font-weight:700;" id="suggestTitle">พบข้อมูลที่อาจช่วยได้</div>
+        <div style="color:rgba(240,192,80,0.8);font-size:11px;" id="suggestSub">ตรวจพบรายการที่ยังไม่สมบูรณ์</div>
+      </div>
+    </div>
+    <div style="padding:20px;">
+      <p style="font-size:13px;color:rgba(255,255,255,0.7);margin-bottom:16px;line-height:1.7;" id="suggestDesc"></p>
+      <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);
+        border-radius:12px;padding:14px;margin-bottom:16px;text-align:center;">
+        <div style="font-size:10px;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-bottom:6px;" id="suggestLabel">เลขไมล์ที่แนะนำ</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:700;color:var(--gold2);" id="suggestVal">—</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px;" id="suggestFrom"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <button class="btn btn-green btn-full" onclick="confirmSuggest()">✅ ใช้ค่านี้</button>
+        <button class="btn btn-outline btn-full" onclick="closeSuggest()">✕ ไม่ใช้</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- CAMERA MODAL -->
 <div class="modal-overlay" id="camModal">
   <div class="cam-box">
@@ -753,6 +779,7 @@ function init() {
 
   if (scriptUrl) {
     checkTodayStatus();
+    checkSmartSuggest();
   } else {
     document.getElementById('todayStatusTxt').textContent = 'ยังไม่เชื่อมต่อ — ไปที่แท็บ ⚙️ ตั้งค่า';
     document.getElementById('todayStatus').className = 'status-row empty';
@@ -1006,6 +1033,10 @@ async function saveRecord(type) {
     } catch(e) { toast('❌ '+e.message, 'err'); }
 
   } else {
+    // ตรวจสอบว่ามีแถวค้างจากเมื่อวานไหม
+    const hasSuggest = await checkSuggestBack();
+    if (hasSuggest) return; // แสดง modal แนะนำแทน
+
     const mile = document.getElementById('mileBack').value;
     if (!mile) { toast('กรุณากรอกเลขไมล์หลังกลับ', 'err'); return; }
     const timeBack = document.getElementById('timeBack').value || formatDateTime(new Date());
@@ -1138,6 +1169,135 @@ async function saveEdit(i) {
     if (d.ok) { toast('✅ บันทึกสำเร็จ!','ok'); loadHistory(); }
     else throw new Error(d.error||'ไม่สำเร็จ');
   } catch(e) { toast('❌ '+e.message,'err'); }
+}
+
+// ════ SMART SUGGEST ════
+let suggestMode = '';    // 'out' | 'back'
+let suggestMile = '';
+let suggestRowKey = '';  // _row ของแถวที่ต้องอัพเดท (กรณี back)
+
+async function checkSmartSuggest() {
+  if (!scriptUrl) return;
+  try {
+    const today = formatDateInput(new Date());
+    const ym = today.substring(0, 7);
+    const d = await callGS({ action: 'getData', month: ym });
+    const allRows = d.data || [];
+
+    // ── กรณี 1: วันนี้ยังไม่มีการบันทึกเลย → แนะนำเลขไมล์ไป ──
+    const todayRows = allRows.filter(r => (r['วันที่']||'').trim() === today);
+    if (todayRows.length === 0) {
+      // หาเลขไมล์กลับของวันล่าสุดที่มีข้อมูล
+      const prevRows = allRows
+        .filter(r => (r['วันที่']||'').trim() < today && r['เลขไมล์กลับ'])
+        .sort((a,b) => b['วันที่'].localeCompare(a['วันที่']));
+      if (prevRows.length > 0) {
+        const prev = prevRows[0];
+        suggestMode = 'out';
+        suggestMile = prev['เลขไมล์กลับ'];
+        showSuggest(
+          '💡', 'แนะนำเลขไมล์ก่อนออก', 'อ้างอิงจากเลขไมล์กลับล่าสุด',
+          `ไม่พบการบันทึกวันนี้ — เลขไมล์กลับล่าสุด (${prev['วันที่']}) คือ ${parseInt(suggestMile).toLocaleString()} กม.
+ต้องการใช้เป็นเลขไมล์ออกวันนี้ไหม?`,
+          suggestMile,
+          `จากวันที่ ${prev['วันที่']} · ไมล์กลับ`
+        );
+      }
+      return;
+    }
+
+    // ── กรณี 2: วันนี้มีแถว "ออก" แล้ว แต่ยังไม่มีเลขไมล์กลับ ──
+    const outOnly = todayRows.filter(r => r['เลขไมล์ไป'] && !r['เลขไมล์กลับ']);
+    if (outOnly.length > 0) {
+      // ไม่ต้องแนะนำ — สถานะนี้ปกติ รอกลับมาบันทึกเอง
+      return;
+    }
+
+    // ── กรณี 3: วันนี้มีทั้ง ไปและกลับแล้ว → ไม่ต้องแนะนำ ──
+
+  } catch(e) {}
+}
+
+// ตรวจสอบเพิ่มเติมตอนกดปุ่ม "กลับถึงที่" แต่ไม่มีแถวออกวันนี้
+async function checkSuggestBack() {
+  if (!scriptUrl) return false;
+  try {
+    const today = formatDateInput(new Date());
+    const ym = today.substring(0, 7);
+    const d = await callGS({ action: 'getData', month: ym });
+    const allRows = d.data || [];
+
+    // หาแถววันนี้ที่ยังไม่มีเลขไมล์กลับ
+    const pending = allRows.filter(r =>
+      (r['วันที่']||'').trim() === today && r['เลขไมล์ไป'] && !r['เลขไมล์กลับ']
+    );
+    if (pending.length > 0) return false; // มีแถวรอกลับปกติ ไม่ต้องแนะนำ
+
+    // ไม่มีแถวออกวันนี้เลย → แนะนำเลขไมล์กลับจากไมล์ออกพรุ่งนี้
+    // (กรณีลืมบันทึกกลับเมื่อวาน)
+    const yest = formatDateInput(new Date(Date.now() - 86400000));
+    const yestOut = allRows.filter(r =>
+      (r['วันที่']||'').trim() === yest && r['เลขไมล์ไป'] && !r['เลขไมล์กลับ']
+    );
+    if (yestOut.length > 0) {
+      const target = yestOut[yestOut.length - 1];
+      // หาเลขไมล์ออกวันนี้ (ถ้ามี) มาเป็นตัวแนะนำ
+      const todayOut = allRows.filter(r =>
+        (r['วันที่']||'').trim() === today && r['เลขไมล์ไป']
+      );
+      if (todayOut.length > 0) {
+        suggestMode = 'back_yesterday';
+        suggestMile = todayOut[0]['เลขไมล์ไป'];
+        suggestRowKey = target._row;
+        showSuggest(
+          '⚠️', 'พบรายการค้างจากเมื่อวาน', `วันที่ ${yest} ยังไม่มีเลขไมล์กลับ`,
+          `พบรายการออกเดินทางเมื่อวาน (${yest}) ที่ยังไม่ได้บันทึกกลับ
+เลขไมล์ออกวันนี้ (${today}) คือ ${parseInt(todayOut[0]['เลขไมล์ไป']).toLocaleString()} กม. — ต้องการใช้เป็นเลขไมล์กลับของเมื่อวานไหม?`,
+          suggestMile,
+          `จากเลขไมล์ออกวันที่ ${today}`
+        );
+        return true;
+      }
+    }
+    return false;
+  } catch(e) { return false; }
+}
+
+function showSuggest(icon, title, sub, desc, mile, from) {
+  document.getElementById('suggestIcon').textContent  = icon;
+  document.getElementById('suggestTitle').textContent = title;
+  document.getElementById('suggestSub').textContent   = sub;
+  document.getElementById('suggestDesc').textContent  = desc;
+  document.getElementById('suggestVal').textContent   = parseInt(mile).toLocaleString();
+  document.getElementById('suggestFrom').textContent  = from;
+  document.getElementById('suggestModal').classList.add('open');
+}
+
+function closeSuggest() {
+  document.getElementById('suggestModal').classList.remove('open');
+  suggestMode = ''; suggestMile = ''; suggestRowKey = '';
+}
+
+function confirmSuggest() {
+  if (!suggestMile) { closeSuggest(); return; }
+  if (suggestMode === 'out') {
+    document.getElementById('mileOut').value  = suggestMile;
+    document.getElementById('timeOut').value  = formatDateTime(new Date());
+    toast('✅ ใส่เลขไมล์ ' + parseInt(suggestMile).toLocaleString() + ' แล้ว', 'ok');
+  } else if (suggestMode === 'back_yesterday') {
+    // บันทึกกลับให้แถวเมื่อวาน
+    const timeBack = formatDateTime(new Date());
+    callGS({
+      action: 'updateRow',
+      _row: suggestRowKey,
+      'เลขไมล์กลับ': suggestMile,
+      'เวลาคืน': timeBack,
+    }).then(r => {
+      if (r.ok) { toast('✅ บันทึกเลขไมล์กลับของเมื่อวานแล้ว!', 'ok'); checkTodayStatus(); }
+      else toast('❌ ' + (r.error||'ไม่สำเร็จ'), 'err');
+    });
+  }
+  closeSuggest();
 }
 
 // ════ CAMERA ════
