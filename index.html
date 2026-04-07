@@ -857,28 +857,31 @@ function setConn(ok) {
 const DD_KEY = 'car2fc_dd';
 
 function ddLoad() {
-  try { return JSON.parse(localStorage.getItem(DD_KEY)) || { detail:[], req:[], apr:[] }; }
-  catch(e) { return { detail:[], req:[], apr:[] }; }
+  try { return JSON.parse(localStorage.getItem(DD_KEY)) || { detail:[], req:[], apr:[], hidden:{detail:[],req:[],apr:[]} }; }
+  catch(e) { return { detail:[], req:[], apr:[], hidden:{detail:[],req:[],apr:[]} }; }
 }
 function ddSave(data) { localStorage.setItem(DD_KEY, JSON.stringify(data)); }
 
 function ddRenderAll() {
   const data = ddLoad();
+  if (!data.hidden) data.hidden = { detail:[], req:[], apr:[] };
   const DEF = {
     detail: ['ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์'],
     req:    ['รวิวรรณ'],
     apr:    ['รวิวรรณ'],
   };
   ['detail','req','apr'].forEach(key => {
-    const all = [...new Set([...DEF[key], ...data[key]])];
+    const hidden = data.hidden[key] || [];
+    const visibleDef = DEF[key].filter(v => !hidden.includes(v));
+    const all = [...new Set([...visibleDef, ...data[key]])];
     const container = document.getElementById('ddList-' + key);
     if (!container) return;
     container.innerHTML = all.map(v => `
       <span style="display:inline-flex;align-items:center;gap:4px;background:#EEF2F7;
         border:1px solid var(--gray2);border-radius:20px;padding:4px 10px;font-size:12px;font-weight:600;">
         ${v}
-        ${DEF[key].includes(v) ? '' : `<button onclick="ddRemove('${key}','${encodeURIComponent(v)}')"
-          style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;line-height:1;padding:0 0 0 2px;">×</button>`}
+        <button onclick="ddRemove('${key}','${encodeURIComponent(v)}')"
+          style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;line-height:1;padding:0 0 0 2px;">×</button>
       </span>`).join('');
   });
 }
@@ -903,7 +906,18 @@ function ddAdd(key) {
 function ddRemove(key, encodedVal) {
   const val = decodeURIComponent(encodedVal);
   const data = ddLoad();
-  data[key] = data[key].filter(v => v !== val);
+  if (!data.hidden) data.hidden = { detail:[], req:[], apr:[] };
+  const DEF = {
+    detail: ['ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์'],
+    req:    ['รวิวรรณ'],
+    apr:    ['รวิวรรณ'],
+  };
+  if (DEF[key] && DEF[key].includes(val)) {
+    // ซ่อน default item ด้วย blacklist
+    if (!data.hidden[key].includes(val)) data.hidden[key].push(val);
+  } else {
+    data[key] = data[key].filter(v => v !== val);
+  }
   ddSave(data);
   ddRenderAll();
   applyDdToDropdowns();
@@ -912,13 +926,17 @@ function ddRemove(key, encodedVal) {
 
 function applyDdToDropdowns() {
   const data = ddLoad();
+  if (!data.hidden) data.hidden = { detail:[], req:[], apr:[] };
   const DEF_DETAIL = ['ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์'];
   const DEF_REQ    = ['รวิวรรณ'];
   const DEF_APR    = ['รวิวรรณ'];
-  populateDropdown('recDetail',    [...new Set([...DEF_DETAIL, ...data.detail])], true);
-  populateDropdown('recRequester', [...new Set([...DEF_REQ,    ...data.req])],    true);
-  populateDropdown('recApprover',  [...new Set([...DEF_APR,    ...data.apr])],    true);
-  populateDropdown('fRequester',   [...new Set([...DEF_REQ,    ...data.req])],    false);
+  const visDetail = DEF_DETAIL.filter(v => !(data.hidden.detail||[]).includes(v));
+  const visReq    = DEF_REQ.filter(v => !(data.hidden.req||[]).includes(v));
+  const visApr    = DEF_APR.filter(v => !(data.hidden.apr||[]).includes(v));
+  populateDropdown('recDetail',    [...new Set([...visDetail, ...data.detail])], true);
+  populateDropdown('recRequester', [...new Set([...visReq,    ...data.req])],    true);
+  populateDropdown('recApprover',  [...new Set([...visApr,    ...data.apr])],    true);
+  populateDropdown('fRequester',   [...new Set([...visReq,    ...data.req])],    false);
 }
 
 // ════ META (dropdowns) ════
@@ -929,14 +947,18 @@ async function loadMeta() {
   try {
     const d = await callGS({ action: 'getMeta' });
     const ddData = ddLoad();
+    if (!ddData.hidden) ddData.hidden = { detail:[], req:[], apr:[] };
     const DEF_DETAIL = ['ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์'];
     const DEF_REQ = ['รวิวรรณ'];
     const DEF_APR = ['รวิวรรณ'];
-    // Merge: default + localStorage + from Sheet
-    populateDropdown('recDetail',    [...new Set([...DEF_DETAIL, ...ddData.detail, ...(d.details||[])])],    true);
-    populateDropdown('recRequester', [...new Set([...DEF_REQ,    ...ddData.req,    ...(d.requesters||[])])], true);
-    populateDropdown('recApprover',  [...new Set([...DEF_APR,    ...ddData.apr,    ...(d.approvers||[])])],  true);
-    populateDropdown('fRequester',   [...new Set([...DEF_REQ,    ...ddData.req,    ...(d.requesters||[])])], false);
+    const visDetail = DEF_DETAIL.filter(v => !(ddData.hidden.detail||[]).includes(v));
+    const visReq    = DEF_REQ.filter(v => !(ddData.hidden.req||[]).includes(v));
+    const visApr    = DEF_APR.filter(v => !(ddData.hidden.apr||[]).includes(v));
+    // Merge: visible defaults + localStorage + from Sheet
+    populateDropdown('recDetail',    [...new Set([...visDetail, ...ddData.detail, ...(d.details||[])])],    true);
+    populateDropdown('recRequester', [...new Set([...visReq,    ...ddData.req,    ...(d.requesters||[])])], true);
+    populateDropdown('recApprover',  [...new Set([...visApr,    ...ddData.apr,    ...(d.approvers||[])])],  true);
+    populateDropdown('fRequester',   [...new Set([...visReq,    ...ddData.req,    ...(d.requesters||[])])], false);
   } catch(e) {}
 }
 
