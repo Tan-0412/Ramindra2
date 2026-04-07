@@ -280,7 +280,7 @@ pre.code{
         <div class="frow">
           <label>รายละเอียดการใช้รถ</label>
           <select id="recDetail" onchange="checkCustom('recDetail','recDetailCustom')">
-            <option value="ไปกลับ รามอินทรา ก.ม.2 - สุวินทวงศ์">ไปกลับ รามอินทรา ก.ม.2 - สุวินทวงศ์</option>
+            <option value="ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์">ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์</option>
             <option value="__custom__">อื่นๆ (ระบุเอง)</option>
           </select>
           <input type="text" id="recDetailCustom" placeholder="ระบุรายละเอียด..." style="display:none;margin-top:6px;">
@@ -865,7 +865,7 @@ function ddSave(data) { localStorage.setItem(DD_KEY, JSON.stringify(data)); }
 function ddRenderAll() {
   const data = ddLoad();
   const DEF = {
-    detail: ['ไปกลับ รามอินทรา ก.ม.2 - สุวินทวงศ์'],
+    detail: ['ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์'],
     req:    ['รวิวรรณ'],
     apr:    ['รวิวรรณ'],
   };
@@ -912,7 +912,7 @@ function ddRemove(key, encodedVal) {
 
 function applyDdToDropdowns() {
   const data = ddLoad();
-  const DEF_DETAIL = ['ไปกลับ รามอินทรา ก.ม.2 - สุวินทวงศ์'];
+  const DEF_DETAIL = ['ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์'];
   const DEF_REQ    = ['รวิวรรณ'];
   const DEF_APR    = ['รวิวรรณ'];
   populateDropdown('recDetail',    [...new Set([...DEF_DETAIL, ...data.detail])], true);
@@ -929,7 +929,7 @@ async function loadMeta() {
   try {
     const d = await callGS({ action: 'getMeta' });
     const ddData = ddLoad();
-    const DEF_DETAIL = ['ไปกลับ รามอินทรา ก.ม.2 - สุวินทวงศ์'];
+    const DEF_DETAIL = ['ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์'];
     const DEF_REQ = ['รวิวรรณ'];
     const DEF_APR = ['รวิวรรณ'];
     // Merge: default + localStorage + from Sheet
@@ -967,11 +967,12 @@ async function checkTodayStatus() {
   if (!scriptUrl) return;
   try {
     const today = formatDateInput(new Date());
+    const todaySend = formatDateSend(today);
     const ym = today.substring(0,7);
     const d = await callGS({ action: 'getData', month: ym });
     const rows = (d.data||[]).filter(r => {
       const rd = (r['วันที่']||'').trim();
-      return rd === today;
+      return rd === todaySend;
     });
     const el = document.getElementById('todayStatus');
     const txt = document.getElementById('todayStatusTxt');
@@ -1015,7 +1016,7 @@ async function saveRecord(type) {
     try {
       const r = await callGS({
         action:'addRow',
-        'วันที่': date,
+        'วันที่': formatDateSend(date),
         'รายละเอียดการใช้รถ': detail,
         'ผู้ขอเบิก': requester,
         'ผู้ให้เบิก': approver,
@@ -1044,7 +1045,7 @@ async function saveRecord(type) {
       const ym = date.substring(0,7);
       const d = await callGS({ action:'getData', month: ym });
       // หาแถวของวันนี้ที่ยังไม่มีเลขไมล์กลับ
-      const rows = (d.data||[]).filter(r => r['วันที่']===date && !r['เลขไมล์กลับ']);
+      const rows = (d.data||[]).filter(r => r['วันที่']===formatDateSend(date) && !r['เลขไมล์กลับ']);
       if (rows.length === 0) { toast('ไม่พบรายการออกเดินทางของวันนี้ หรือบันทึกกลับไปแล้ว', 'err'); return; }
       const target = rows[rows.length-1];
       const r = await callGS({
@@ -1180,16 +1181,17 @@ async function checkSmartSuggest() {
   if (!scriptUrl) return;
   try {
     const today = formatDateInput(new Date());
+    const todaySend = formatDateSend(today);
     const ym = today.substring(0, 7);
     const d = await callGS({ action: 'getData', month: ym });
     const allRows = d.data || [];
 
     // ── กรณี 1: วันนี้ยังไม่มีการบันทึกเลย → แนะนำเลขไมล์ไป ──
-    const todayRows = allRows.filter(r => (r['วันที่']||'').trim() === today);
+    const todayRows = allRows.filter(r => (r['วันที่']||'').trim() === todaySend);
     if (todayRows.length === 0) {
       // หาเลขไมล์กลับของวันล่าสุดที่มีข้อมูล
       const prevRows = allRows
-        .filter(r => (r['วันที่']||'').trim() < today && r['เลขไมล์กลับ'])
+        .filter(r => r['เลขไมล์กลับ'])
         .sort((a,b) => b['วันที่'].localeCompare(a['วันที่']));
       if (prevRows.length > 0) {
         const prev = prevRows[0];
@@ -1223,19 +1225,20 @@ async function checkSuggestBack() {
   if (!scriptUrl) return false;
   try {
     const today = formatDateInput(new Date());
+    const todaySend = formatDateSend(today);
     const ym = today.substring(0, 7);
     const d = await callGS({ action: 'getData', month: ym });
     const allRows = d.data || [];
 
     // หาแถววันนี้ที่ยังไม่มีเลขไมล์กลับ
     const pending = allRows.filter(r =>
-      (r['วันที่']||'').trim() === today && r['เลขไมล์ไป'] && !r['เลขไมล์กลับ']
+      (r['วันที่']||'').trim() === todaySend && r['เลขไมล์ไป'] && !r['เลขไมล์กลับ']
     );
     if (pending.length > 0) return false; // มีแถวรอกลับปกติ ไม่ต้องแนะนำ
 
     // ไม่มีแถวออกวันนี้เลย → แนะนำเลขไมล์กลับจากไมล์ออกพรุ่งนี้
     // (กรณีลืมบันทึกกลับเมื่อวาน)
-    const yest = formatDateInput(new Date(Date.now() - 86400000));
+    const yest = formatDateSend(formatDateInput(new Date(Date.now() - 86400000)));
     const yestOut = allRows.filter(r =>
       (r['วันที่']||'').trim() === yest && r['เลขไมล์ไป'] && !r['เลขไมล์กลับ']
     );
@@ -1243,7 +1246,7 @@ async function checkSuggestBack() {
       const target = yestOut[yestOut.length - 1];
       // หาเลขไมล์ออกวันนี้ (ถ้ามี) มาเป็นตัวแนะนำ
       const todayOut = allRows.filter(r =>
-        (r['วันที่']||'').trim() === today && r['เลขไมล์ไป']
+        (r['วันที่']||'').trim() === todaySend && r['เลขไมล์ไป']
       );
       if (todayOut.length > 0) {
         suggestMode = 'back_yesterday';
@@ -1439,9 +1442,15 @@ async function callGS(params, url) {
 function formatDateInput(d) {
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
+// แปลง yyyy-mm-dd → dd/mm/yy สำหรับส่งเข้า Sheet
+function formatDateSend(dateStr) {
+  const [y, m, day] = dateStr.split('-');
+  return `${day}/${m}/${String(y).slice(-2)}`;
+}
+// คืนเฉพาะ hh:mm สำหรับส่งเข้า Sheet
 function formatDateTime(d) {
   const pad = n => String(n).padStart(2,'0');
-  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function toast(msg, type) {
