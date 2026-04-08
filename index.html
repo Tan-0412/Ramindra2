@@ -324,7 +324,7 @@ pre.code{
         </div>
       </div>
       <button class="btn-cam" onclick="openCamera('out')">
-        📷 ถ่ายภาพเลขไมล์ · บันทึกลงอัลบั้ม
+        📷 ถ่ายรูปหน้าปัด · AI อ่านเลขไมล์
       </button>
       <input type="hidden" id="timeOut">
     </div>
@@ -343,7 +343,7 @@ pre.code{
         </div>
       </div>
       <button class="btn-cam" onclick="openCamera('back')">
-        📷 ถ่ายภาพเลขไมล์ · บันทึกลงอัลบั้ม
+        📷 ถ่ายรูปหน้าปัด · AI อ่านเลขไมล์
       </button>
       <input type="hidden" id="timeBack">
     </div>
@@ -512,11 +512,13 @@ function getData(p) {
   if (p.month) {
     rows = rows.filter(r => {
       const d = r['วันที่'] || '';
-      // Support yyyy-mm-dd or dd/mm/yyyy
+      // yyyy-mm-dd
       if (d.includes('-')) return d.startsWith(p.month);
+      // dd/mm/yyyy หรือ dd/mm/yy
       const parts = d.split('/');
       if (parts.length >= 3) {
-        return parts[2].substring(0,4) + '-' + parts[1].padStart(2,'0') === p.month;
+        const y = parts[2].length === 2 ? '20' + parts[2] : parts[2].substring(0,4);
+        return y + '-' + parts[1].padStart(2,'0') === p.month;
       }
       return false;
     });
@@ -634,6 +636,19 @@ function ok(data) {
     </div>
 
     <div class="card">
+      <div class="card-hdr"><h2>📷 AI อ่านเลขไมล์ (Claude Vision)</h2><p>ต้องการ Anthropic API Key สำหรับถ่ายรูป</p></div>
+      <div class="card-body">
+        <div class="frow">
+          <label>Anthropic API Key</label>
+          <input type="password" id="apiKey" placeholder="sk-ant-api03-...">
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="saveApiKey()">💾 บันทึก API Key</button>
+        <div id="apiKeyStatus" style="font-size:11px;margin-top:6px;color:var(--green);display:none;">✅ บันทึกแล้ว</div>
+        <p style="font-size:11px;color:var(--gray);margin-top:8px;">API Key เก็บในเครื่องนี้เท่านั้น (localStorage) ไม่ได้ส่งที่ใดนอกจาก Anthropic</p>
+      </div>
+    </div>
+
+    <div class="card">
       <div class="card-hdr"><h2>📄 รายงานการใช้รถ</h2><p>พิมพ์ / บันทึก PDF</p></div>
       <div class="card-body">
         <p style="font-size:12px;color:var(--gray);margin-bottom:12px;">เปิดหน้ารายงานพร้อมตัวกรอง เดือน · ช่วงวันที่ · ผู้ขอเบิก แล้วพิมพ์หรือบันทึกเป็น PDF ได้เลย</p>
@@ -685,7 +700,7 @@ function ok(data) {
 <div class="modal-overlay" id="camModal">
   <div class="cam-box">
     <div class="cam-hdr">
-      <h3 id="camTitle">📷 ถ่ายภาพเลขไมล์</h3>
+      <h3 id="camTitle">📷 ถ่ายรูปหน้าปัดรถ</h3>
       <button class="cam-close" onclick="closeCamera()">✕</button>
     </div>
     <video id="camVideo" autoplay playsinline muted></video>
@@ -695,21 +710,18 @@ function ok(data) {
       <button class="btn btn-gold" onclick="capturePhoto()" id="btnCapture">📸 ถ่ายภาพ</button>
       <button class="btn btn-outline" onclick="closeCamera()">ยกเลิก</button>
     </div>
-    <!-- preview หลังถ่าย -->
+    <div class="analyzing" id="analyzing">
+      <div class="spin"></div>
+      <p>AI กำลังอ่านเลขไมล์...</p>
+    </div>
     <div class="cam-result" id="camResult">
-      <div style="padding:0 18px 6px;">
-        <img id="camPreviewImg" src="" alt="preview"
-          style="width:100%;border-radius:10px;display:block;max-height:220px;object-fit:cover;">
+      <div class="cam-result-box">
+        <div class="cam-result-label">เลขไมล์ที่อ่านได้</div>
+        <div class="cam-result-val" id="camResultVal">—</div>
+        <div class="cam-result-time" id="camResultTime">—</div>
       </div>
-      <div class="cam-result-box" style="margin:0 18px;">
-        <div class="cam-result-label">📍 <span id="camResultMode">ก่อนออก</span> · <span id="camResultTime">—</span></div>
-        <div style="font-size:12px;color:rgba(255,255,255,0.55);margin-top:6px;line-height:1.6;">
-          กด <strong style="color:var(--gold2);">บันทึกลงอัลบั้ม</strong> เพื่อดาวน์โหลดภาพนี้ลงเครื่อง<br>
-          หรือ <strong style="color:rgba(255,255,255,0.7);">ถ่ายใหม่</strong> ถ้าภาพไม่ชัด
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 18px 16px;">
-        <button class="btn btn-green btn-sm btn-full" onclick="savePhotoToAlbum()">💾 บันทึกลงอัลบั้ม</button>
+      <div style="display:flex;gap:8px;margin-top:10px;padding-bottom:2px;">
+        <button class="btn btn-green btn-sm btn-full" onclick="confirmMile()">✅ ใช้ค่านี้</button>
         <button class="btn btn-outline btn-sm btn-full" onclick="retakePhoto()">🔄 ถ่ายใหม่</button>
       </div>
     </div>
@@ -721,6 +733,7 @@ function ok(data) {
 
 <script>
 let scriptUrl = '';
+let apiKey = '';
 let allHistory = [];
 let camMode = 'out';
 let capturedImageData = '';
@@ -734,12 +747,14 @@ function init() {
     try {
       const s = JSON.parse(saved);
       scriptUrl = s.url || '';
+      apiKey = s.apiKey || '';
       if (scriptUrl) {
         document.getElementById('gsUrl').value = scriptUrl;
         setConn(true);
         loadMeta();
         updateShareUrl();
       }
+      if (apiKey) document.getElementById('apiKey').value = apiKey;
     } catch(e) {}
   }
   // Check share URL param
@@ -814,15 +829,23 @@ async function testConn() {
   } catch(e) { document.getElementById('setupStatus').textContent = '❌ ' + e.message; toast('❌ ไม่ได้', 'err'); }
 }
 
+function saveApiKey() {
+  apiKey = document.getElementById('apiKey').value.trim();
+  saveSetting();
+  const el = document.getElementById('apiKeyStatus');
+  el.style.display = '';
+  setTimeout(() => el.style.display = 'none', 2500);
+}
+
 function resetCache() {
-  if (!confirm('ล้างข้อมูลที่บันทึกไว้ในเครื่องทั้งหมด (URL, Dropdown) แล้วรีโหลดหน้าใหม่?')) return;
+  if (!confirm('ล้างข้อมูลที่บันทึกไว้ในเครื่องทั้งหมด (URL, API Key, Dropdown) แล้วรีโหลดหน้าใหม่?')) return;
   localStorage.removeItem('car2fc4495');
   localStorage.removeItem('car2fc_dd');
   location.reload();
 }
 
 function saveSetting() {
-  localStorage.setItem('car2fc4495', JSON.stringify({ url: scriptUrl }));
+  localStorage.setItem('car2fc4495', JSON.stringify({ url: scriptUrl, apiKey }));
 }
 
 function setConn(ok) {
@@ -1304,79 +1327,106 @@ function confirmSuggest() {
   closeSuggest();
 }
 
-// ════ CAMERA — บันทึกภาพลงอัลบั้ม ════
+// ════ CAMERA ════
 async function openCamera(mode) {
   camMode = mode;
   capturedImageData = '';
-  document.getElementById('camTitle').textContent = mode === 'out' ? '📷 เลขไมล์ก่อนออก' : '📷 เลขไมล์หลังกลับ';
+  document.getElementById('camTitle').textContent = mode==='out' ? '📷 เลขไมล์ก่อนออก' : '📷 เลขไมล์หลังกลับ';
   document.getElementById('camResult').style.display = 'none';
+  document.getElementById('analyzing').style.display = 'none';
   document.getElementById('btnCapture').style.display = '';
   document.getElementById('camModal').classList.add('open');
   try {
     camStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+      video: { facingMode:'environment', width:{ideal:1280}, height:{ideal:720} }
     });
     document.getElementById('camVideo').srcObject = camStream;
   } catch(e) {
-    toast('❌ ไม่สามารถเปิดกล้องได้: ' + e.message, 'err');
+    toast('❌ ไม่สามารถเปิดกล้องได้: '+e.message, 'err');
     closeCamera();
   }
 }
 
 function closeCamera() {
   document.getElementById('camModal').classList.remove('open');
-  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+  if (camStream) { camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
 }
 
 function capturePhoto() {
   const video  = document.getElementById('camVideo');
   const canvas = document.getElementById('camCanvas');
-  canvas.width  = video.videoWidth  || 1280;
-  canvas.height = video.videoHeight || 720;
+  canvas.width  = video.videoWidth  || 640;
+  canvas.height = video.videoHeight || 480;
   canvas.getContext('2d').drawImage(video, 0, 0);
-  capturedImageData = canvas.toDataURL('image/jpeg', 0.92);
+  capturedImageData = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
   capturedTimestamp = formatDateTime(new Date());
-
-  // แสดง preview
-  document.getElementById('camPreviewImg').src = capturedImageData;
-  document.getElementById('camResultMode').textContent = camMode === 'out' ? 'ก่อนออก' : 'หลังกลับ';
-  document.getElementById('camResultTime').textContent = '🕐 ' + capturedTimestamp;
   document.getElementById('btnCapture').style.display = 'none';
-  document.getElementById('camResult').style.display = '';
+  analyzeImage();
 }
 
-function savePhotoToAlbum() {
-  if (!capturedImageData) return;
-  // สร้างชื่อไฟล์: mileOut_08-04-2026_08-30.jpg
-  const now = new Date();
-  const dd   = String(now.getDate()).padStart(2,'0');
-  const mm   = String(now.getMonth()+1).padStart(2,'0');
-  const yyyy = now.getFullYear();
-  const hh   = String(now.getHours()).padStart(2,'0');
-  const min  = String(now.getMinutes()).padStart(2,'0');
-  const modeLabel = camMode === 'out' ? 'mile-out' : 'mile-back';
-  const filename = `${modeLabel}_${dd}-${mm}-${yyyy}_${hh}-${min}.jpg`;
+async function analyzeImage() {
+  if (!apiKey) {
+    document.getElementById('camResultVal').textContent = 'ไม่มี API Key';
+    document.getElementById('camResultTime').textContent = '⚙️ ไปตั้งค่า API Key ก่อนนะครับ';
+    document.getElementById('analyzing').style.display = 'none';
+    document.getElementById('camResult').style.display = '';
+    return;
+  }
+  document.getElementById('analyzing').style.display = 'block';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-6',
+        max_tokens: 100,
+        messages: [{
+          role:'user',
+          content:[
+            { type:'image', source:{ type:'base64', media_type:'image/jpeg', data: capturedImageData } },
+            { type:'text', text:'ในรูปนี้คือหน้าปัดรถยนต์ กรุณาอ่านเลขไมล์ (odometer) ที่แสดงอยู่ แล้วตอบเฉพาะตัวเลขเท่านั้น ไม่ต้องมีข้อความอื่น เช่น 45230' }
+          ]
+        }]
+      })
+    });
+    const data = await res.json();
+    const text = (data.content?.[0]?.text || '').trim();
+    const mileMatch = text.match(/\d{4,7}/);
+    document.getElementById('camResultVal').textContent  = mileMatch ? mileMatch[0] : (text||'อ่านไม่ได้');
+    document.getElementById('camResultTime').textContent = '🕐 ' + capturedTimestamp;
+  } catch(e) {
+    document.getElementById('camResultVal').textContent  = 'เกิดข้อผิดพลาด';
+    document.getElementById('camResultTime').textContent = e.message;
+  }
+  document.getElementById('analyzing').style.display = 'none';
+  document.getElementById('camResult').style.display  = '';
+}
 
-  // ดาวน์โหลด → บันทึกลงอัลบั้มมือถือ
-  const a = document.createElement('a');
-  a.href = capturedImageData;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-
-  toast('💾 บันทึกภาพ ' + filename + ' แล้ว', 'ok');
+function confirmMile() {
+  const val = document.getElementById('camResultVal').textContent;
+  const num = val.match(/\d+/);
+  if (num) {
+    if (camMode==='out') {
+      document.getElementById('mileOut').value = num[0];
+      document.getElementById('timeOut').value = capturedTimestamp;
+    } else {
+      document.getElementById('mileBack').value = num[0];
+      document.getElementById('timeBack').value = capturedTimestamp;
+    }
+    toast('✅ บันทึกเลขไมล์ '+num[0]+' · '+capturedTimestamp, 'ok');
+  }
   closeCamera();
 }
 
 function retakePhoto() {
   document.getElementById('camResult').style.display = 'none';
   document.getElementById('btnCapture').style.display = '';
-  capturedImageData = '';
 }
-
-// ฟังก์ชันเก่า — คงไว้เผื่อ confirmMile ถูกเรียกจากที่อื่น
-function confirmMile() { closeCamera(); }
 
 // ════ SHARE / COPY ════
 function updateShareUrl() {
@@ -1416,10 +1466,10 @@ async function callGS(params, url) {
 function formatDateInput(d) {
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
-// แปลง yyyy-mm-dd → dd/mm/yy สำหรับส่งเข้า Sheet
+// แปลง yyyy-mm-dd → dd/mm/yyyy สำหรับส่งเข้า Sheet
 function formatDateSend(dateStr) {
   const [y, m, day] = dateStr.split('-');
-  return `${day}/${m}/${String(y).slice(-2)}`;
+  return `${day}/${m}/${y}`;
 }
 // คืนเฉพาะ hh:mm สำหรับส่งเข้า Sheet
 function formatDateTime(d) {
