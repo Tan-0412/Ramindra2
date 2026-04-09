@@ -781,32 +781,31 @@ let capturedTimestamp = '';
 let camStream = null;
 
 // ════ INIT ════
+const FIXED_URL = 'https://script.google.com/macros/s/AKfycbzS4LnimaOQvnLg4PMjxzyYon50URNYQfxwLYb563MQhTUe1qLu8vqbkss5iGi0hQyQ/exec';
+
 function init() {
+  // โหลด URL จาก localStorage ก่อน ถ้าไม่มีใช้ FIXED_URL
   const saved = localStorage.getItem('car2fc4495');
   if (saved) {
     try {
       const s = JSON.parse(saved);
-      scriptUrl = s.url || '';
+      scriptUrl = s.url || FIXED_URL;
       apiKey = s.apiKey || '';
-      if (scriptUrl) {
-        document.getElementById('gsUrl').value = scriptUrl;
-        setConn(true);
-        loadMeta();
-        updateShareUrl();
-      }
       if (apiKey) document.getElementById('apiKey').value = apiKey;
-    } catch(e) {}
+    } catch(e) { scriptUrl = FIXED_URL; }
+  } else {
+    scriptUrl = FIXED_URL;
   }
   // Check share URL param
   const params = new URLSearchParams(window.location.search);
-  if (params.get('url') && !scriptUrl) {
+  if (params.get('url')) {
     scriptUrl = decodeURIComponent(params.get('url'));
-    document.getElementById('gsUrl').value = scriptUrl;
-    saveSetting();
-    setConn(true);
-    loadMeta();
-    updateShareUrl();
   }
+  document.getElementById('gsUrl').value = scriptUrl;
+  saveSetting();
+  setConn(true);
+  loadMeta();
+  updateShareUrl();
   // Today's date
   document.getElementById('recDate').value = formatDateInput(new Date());
   // Clock
