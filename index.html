@@ -339,7 +339,7 @@ pre.code{
         <div class="frow">
           <label>เลขไมล์ (กม.)</label>
           <input type="number" id="mileBack" placeholder="เช่น 45280" inputmode="numeric"
-            style="background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.15);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;">
+            style="background:rgba(255,255,255,0.08) !important;border:1.5px solid rgba(255,255,255,0.15) !important;color:#fff !important;font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;border-radius:10px;">
         </div>
         <div class="time-display">
           <span class="tl">วันเวลาปัจจุบัน</span>
@@ -376,7 +376,11 @@ pre.code{
   </div>
 
   <div class="filter-row">
-    <div class="frow"><label>เดือน</label><input type="month" id="fMonth"></div>
+    <div class="frow"><label>เดือน</label>
+      <select id="fMonth" style="width:100%;padding:10px 12px;border:1.5px solid var(--gray2);border-radius:10px;font-size:14px;font-family:'Sarabun',sans-serif;color:var(--tx);background:#FAFBFD;outline:none;">
+        <option value="">ทุกเดือน</option>
+      </select>
+    </div>
     <div class="frow"><label>ผู้ขอเบิก</label>
       <select id="fRequester"><option value="">ทั้งหมด</option></select>
     </div>
@@ -416,7 +420,11 @@ pre.code{
       <div class="card-hdr"><h2>📄 รายงานการใช้รถ · 2ฒฉ 4495</h2><p>กรองแล้วพิมพ์หรือบันทึก PDF</p></div>
       <div class="card-body" style="padding:14px 18px;">
         <div class="filter-row">
-          <div class="frow"><label>เดือน</label><input type="month" id="rpMonth"></div>
+          <div class="frow"><label>เดือน</label>
+            <select id="rpMonth" style="width:100%;padding:10px 12px;border:1.5px solid var(--gray2);border-radius:10px;font-size:14px;font-family:'Sarabun',sans-serif;color:var(--tx);background:#FAFBFD;outline:none;">
+              <option value="">ทุกเดือน</option>
+            </select>
+          </div>
           <div class="frow"><label>วันที่เริ่ม</label><input type="date" id="rpDateFrom"></div>
           <div class="frow"><label>วันที่สิ้นสุด</label><input type="date" id="rpDateTo"></div>
           <div class="frow"><label>ผู้ขอเบิก</label>
@@ -780,6 +788,30 @@ let camMode = 'out';
 let capturedImageData = '';
 let capturedTimestamp = '';
 let camStream = null;
+
+
+// ════ POPULATE MONTH SELECTS ════
+function populateMonthSelect() {
+  const now = new Date();
+  const TH = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  ['rpMonth','fMonth'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">ทุกเดือน</option>';
+    for (let i = 0; i < 13; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const val = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+      const lbl = TH[d.getMonth()+1] + ' ' + (d.getFullYear()+543);
+      const o = document.createElement('option');
+      o.value = val; o.textContent = lbl;
+      sel.appendChild(o);
+    }
+    // default = เดือนนี้
+    const curYM = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    sel.value = cur || curYM;
+  });
+}
 
 // ════ INIT ════
 const FIXED_URL = 'https://script.google.com/macros/s/AKfycbzS4LnimaOQvnLg4PMjxzyYon50URNYQfxwLYb563MQhTUe1qLu8vqbkss5iGi0hQyQ/exec';
@@ -1242,13 +1274,13 @@ function renderHistory() {
     const alt  = i%2===1?'background:#FAFCFF;':'';
     return `<tr id="hrow-${i}" style="${alt}">
       <td style="color:var(--gray);font-size:10px;">${i+1}</td>
-      <td class="mono" style="font-size:11px;">${r['วันที่']||'—'}</td>
+      <td class="mono" style="font-size:11px;">${cleanDate(r['วันที่'])}</td>
       <td style="font-size:11px;max-width:140px;overflow:hidden;">${r['รายละเอียดการใช้รถ']||'—'}</td>
       <td style="font-size:11px;">${r['ผู้ขอเบิก']||'—'}</td>
       <td class="mono r">${r['เลขไมล์ไป']?parseInt(r['เลขไมล์ไป']).toLocaleString():'—'}</td>
-      <td class="mono" style="font-size:10px;">${r['เวลาเบิก']||'—'}</td>
+      <td class="mono" style="font-size:10px;">${cleanTime(r['เวลาเบิก'])}</td>
       <td class="mono r">${r['เลขไมล์กลับ']?parseInt(r['เลขไมล์กลับ']).toLocaleString():'—'}</td>
-      <td class="mono" style="font-size:10px;">${r['เวลาคืน']||'—'}</td>
+      <td class="mono" style="font-size:10px;">${cleanTime(r['เวลาคืน'])}</td>
       <td class="mono r" style="font-weight:700;color:var(--green);">${dist}</td>
       <td><span class="badge ${done?'badge-done':'badge-out'}">${done?'ครบ':'รอกลับ'}</span></td>
       <td style="font-size:11px;color:var(--gray);max-width:120px;">${r['หมายเหตุ']||''}</td>
