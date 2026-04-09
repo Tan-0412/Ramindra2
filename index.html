@@ -174,6 +174,29 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--tx);min-h
 .analyzing p{color:rgba(255,255,255,0.6);font-size:13px;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
+/* ── FORCE MILE INPUT สีเข้มทุก mode ── */
+#mileOut, #mileBack {
+  background: rgba(255,255,255,0.08) !important;
+  border: 1.5px solid rgba(255,255,255,0.15) !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  font-family: 'IBM Plex Mono', monospace !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  color-scheme: dark !important;
+}
+#mileOut::placeholder, #mileBack::placeholder {
+  color: rgba(255,255,255,0.3) !important;
+  -webkit-text-fill-color: rgba(255,255,255,0.3) !important;
+  opacity: 1 !important;
+}
+#mileOut:focus, #mileBack:focus {
+  background: rgba(255,255,255,0.15) !important;
+  border: 1.5px solid var(--gold2) !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 /* ── HISTORY TABLE ── */
 .tbl-wrap{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;font-size:12px;min-width:680px;}
@@ -338,8 +361,7 @@ pre.code{
       <div class="mile-input-row">
         <div class="frow">
           <label>เลขไมล์ (กม.)</label>
-          <input type="number" id="mileBack" placeholder="เช่น 45280" inputmode="numeric"
-            style="background:rgba(255,255,255,0.08) !important;border:1.5px solid rgba(255,255,255,0.15) !important;color:#fff !important;font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;border-radius:10px;">
+          <input type="number" id="mileBack" placeholder="เช่น 45280" inputmode="numeric">
         </div>
         <div class="time-display">
           <span class="tl">วันเวลาปัจจุบัน</span>
@@ -377,7 +399,7 @@ pre.code{
 
   <div class="filter-row">
     <div class="frow"><label>เดือน</label>
-      <select id="fMonth" style="width:100%;padding:10px 12px;border:1.5px solid var(--gray2);border-radius:10px;font-size:14px;font-family:'Sarabun',sans-serif;color:var(--tx);background:#FAFBFD;outline:none;">
+      <select id="fMonth">
         <option value="">ทุกเดือน</option>
       </select>
     </div>
@@ -421,7 +443,7 @@ pre.code{
       <div class="card-body" style="padding:14px 18px;">
         <div class="filter-row">
           <div class="frow"><label>เดือน</label>
-            <select id="rpMonth" style="width:100%;padding:10px 12px;border:1.5px solid var(--gray2);border-radius:10px;font-size:14px;font-family:'Sarabun',sans-serif;color:var(--tx);background:#FAFBFD;outline:none;">
+            <select id="rpMonth">
               <option value="">ทุกเดือน</option>
             </select>
           </div>
@@ -794,10 +816,9 @@ let camStream = null;
 function populateMonthSelect() {
   const now = new Date();
   const TH = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-  ['rpMonth','fMonth'].forEach(id => {
+  ['fMonth','rpMonth'].forEach(id => {
     const sel = document.getElementById(id);
-    if (!sel) return;
-    const cur = sel.value;
+    if (!sel || sel.tagName !== 'SELECT') return;
     sel.innerHTML = '<option value="">ทุกเดือน</option>';
     for (let i = 0; i < 13; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -808,8 +829,7 @@ function populateMonthSelect() {
       sel.appendChild(o);
     }
     // default = เดือนนี้
-    const curYM = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-    sel.value = cur || curYM;
+    sel.value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
   });
 }
 
@@ -841,8 +861,7 @@ function init() {
   updateNowDisplay();
   setInterval(updateNowDisplay, 1000);
   // Filter month
-  const now = new Date();
-  document.getElementById('fMonth').value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  populateMonthSelect();
 
   // Render dropdown manager tags
   ddRenderAll();
@@ -1247,6 +1266,7 @@ async function loadHistory() {
 
 function resetHistoryFilter() {
   document.getElementById('fMonth').value = '';
+  populateMonthSelect();
   document.getElementById('fRequester').value = '';
   loadHistory();
 }
@@ -1274,13 +1294,13 @@ function renderHistory() {
     const alt  = i%2===1?'background:#FAFCFF;':'';
     return `<tr id="hrow-${i}" style="${alt}">
       <td style="color:var(--gray);font-size:10px;">${i+1}</td>
-      <td class="mono" style="font-size:11px;">${cleanDate(r['วันที่'])}</td>
+      <td class="mono" style="font-size:11px;">${r['วันที่']||'—'}</td>
       <td style="font-size:11px;max-width:140px;overflow:hidden;">${r['รายละเอียดการใช้รถ']||'—'}</td>
       <td style="font-size:11px;">${r['ผู้ขอเบิก']||'—'}</td>
       <td class="mono r">${r['เลขไมล์ไป']?parseInt(r['เลขไมล์ไป']).toLocaleString():'—'}</td>
-      <td class="mono" style="font-size:10px;">${cleanTime(r['เวลาเบิก'])}</td>
+      <td class="mono" style="font-size:10px;">${r['เวลาเบิก']||'—'}</td>
       <td class="mono r">${r['เลขไมล์กลับ']?parseInt(r['เลขไมล์กลับ']).toLocaleString():'—'}</td>
-      <td class="mono" style="font-size:10px;">${cleanTime(r['เวลาคืน'])}</td>
+      <td class="mono" style="font-size:10px;">${r['เวลาคืน']||'—'}</td>
       <td class="mono r" style="font-weight:700;color:var(--green);">${dist}</td>
       <td><span class="badge ${done?'badge-done':'badge-out'}">${done?'ครบ':'รอกลับ'}</span></td>
       <td style="font-size:11px;color:var(--gray);max-width:120px;">${r['หมายเหตุ']||''}</td>
