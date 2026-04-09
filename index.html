@@ -338,7 +338,8 @@ pre.code{
       <div class="mile-input-row">
         <div class="frow">
           <label>เลขไมล์ (กม.)</label>
-          <input type="number" id="mileBack" placeholder="เช่น 45280" inputmode="numeric">
+          <input type="number" id="mileBack" placeholder="เช่น 45280" inputmode="numeric"
+            style="background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.15);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;">
         </div>
         <div class="time-display">
           <span class="tl">วันเวลาปัจจุบัน</span>
@@ -784,8 +785,8 @@ let camStream = null;
 const FIXED_URL = 'https://script.google.com/macros/s/AKfycbzS4LnimaOQvnLg4PMjxzyYon50URNYQfxwLYb563MQhTUe1qLu8vqbkss5iGi0hQyQ/exec';
 
 function init() {
-  // โหลด URL จาก localStorage ก่อน ถ้าไม่มีใช้ FIXED_URL
   const saved = localStorage.getItem('car2fc4495');
+  // โหลด URL: localStorage → FIXED_URL
   if (saved) {
     try {
       const s = JSON.parse(saved);
@@ -796,15 +797,11 @@ function init() {
   } else {
     scriptUrl = FIXED_URL;
   }
-  // Check share URL param
   const params = new URLSearchParams(window.location.search);
-  if (params.get('url')) {
-    scriptUrl = decodeURIComponent(params.get('url'));
-  }
+  if (params.get('url')) scriptUrl = decodeURIComponent(params.get('url'));
   document.getElementById('gsUrl').value = scriptUrl;
   saveSetting();
   setConn(true);
-  loadMeta();
   updateShareUrl();
   // Today's date
   document.getElementById('recDate').value = formatDateInput(new Date());
@@ -819,12 +816,8 @@ function init() {
   ddRenderAll();
 
   if (scriptUrl) {
-    checkTodayStatus();
-    checkSmartSuggest();
-    // warm-up ping ปลุก Script ก่อน แล้วโหลด history ทันที
-    callGS({ action: 'ping' })
-      .then(() => { setConn(true); })
-      .catch(() => setConn(false));
+    // ยิง API แค่ครั้งเดียว แล้วเอาผลไปใช้ทุกอย่าง
+    initLoad();
   } else {
     document.getElementById('todayStatusTxt').textContent = 'ยังไม่เชื่อมต่อ — ไปที่แท็บ ⚙️ ตั้งค่า';
     document.getElementById('todayStatus').className = 'status-row empty';
@@ -1059,6 +1052,71 @@ async function checkTodayStatus() {
       }
     }
   } catch(e) {}
+}
+
+// ════ INIT LOAD — โหลดทุกอย่างด้วย 2 calls parallel ════
+let _cachedTodayRows = null; // cache ไว้ใช้ในหน้าบันทึก
+
+async function initLoad() {
+  const today = formatDateInput(new Date());
+  const ym = today.substring(0,7);
+  try {
+    // ยิง 2 calls พร้อมกัน
+    const [metaRes, dataRes] = await Promise.all([
+      callGS({ action: 'getMeta' }),
+      callGS({ action: 'getData', month: ym })
+    ]);
+    setConn(true);
+
+    // ── อัปเดต dropdowns จาก meta ──
+    const d = metaRes;
+    const ddData = ddLoad();
+    if (!ddData.hidden) ddData.hidden = { detail:[], req:[], apr:[] };
+    const DEF_DETAIL = ['ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์'];
+    const DEF_REQ = ['รวิวรรณ']; const DEF_APR = ['รวิวรรณ'];
+    const visDetail = DEF_DETAIL.filter(v => !(ddData.hidden.detail||[]).includes(v));
+    const visReq    = DEF_REQ.filter(v => !(ddData.hidden.req||[]).includes(v));
+    const visApr    = DEF_APR.filter(v => !(ddData.hidden.apr||[]).includes(v));
+    populateDropdown('recDetail',    [...new Set([...visDetail,...ddData.detail,...(d.details||[])])],    true);
+    populateDropdown('recRequester', [...new Set([...visReq,...ddData.req,...(d.requesters||[])])], true);
+    populateDropdown('recApprover',  [...new Set([...visApr,...ddData.apr,...(d.approvers||[])])],  true);
+    populateDropdown('fRequester',   [...new Set([...visReq,...ddData.req,...(d.requesters||[])])], false);
+
+    // ── อัปเดต today status จาก data ──
+    const allRows = dataRes.data || [];
+    _cachedTodayRows = allRows; // cache ไว้
+    const todaySend = formatDateSend(today);
+    const todayRows = allRows.filter(r => (r['วันที่']||'').trim() === todaySend);
+    const el  = document.getElementById('todayStatus');
+    const txt = document.getElementById('todayStatusTxt');
+    if (todayRows.length === 0) {
+      el.className = 'status-row empty';
+      txt.textContent = 'วันนี้ยังไม่มีการบันทึก';
+      // แนะนำเลขไมล์จากครั้งล่าสุด
+      const prev = allRows.filter(r => r['เลขไมล์กลับ'])
+        .sort((a,b) => (b['วันที่']||'').localeCompare(a['วันที่']||''));
+      if (prev.length > 0) {
+        suggestMode = 'out'; suggestMile = prev[0]['เลขไมล์กลับ'];
+        showSuggest('💡','แนะนำเลขไมล์ก่อนออก','อ้างอิงจากเลขไมล์กลับล่าสุด',
+          `เลขไมล์กลับล่าสุด (${cleanDate(prev[0]['วันที่'])}) คือ ${parseInt(suggestMile).toLocaleString()} กม. ต้องการใช้เป็นเลขไมล์ออกวันนี้ไหม?`,
+          suggestMile, `จากวันที่ ${cleanDate(prev[0]['วันที่'])} · ไมล์กลับ`);
+      }
+    } else {
+      const last = todayRows[todayRows.length-1];
+      const hasBack = last['เลขไมล์กลับ'] && last['เลขไมล์กลับ'] !== '';
+      if (hasBack) {
+        el.className = 'status-row back';
+        const dist = parseInt(last['เลขไมล์กลับ']) - parseInt(last['เลขไมล์ไป']);
+        txt.textContent = `✅ กลับถึงที่แล้ว · วันนี้ ${isNaN(dist)?'-':dist.toLocaleString()} กม.`;
+      } else {
+        el.className = 'status-row out';
+        txt.textContent = `🚗 ออกเดินทางแล้ว เวลา ${cleanTime(last['เวลาเบิก'])||'-'} · รอบันทึกกลับ`;
+      }
+    }
+  } catch(e) {
+    setConn(false);
+    document.getElementById('todayStatusTxt').textContent = 'เชื่อมต่อไม่ได้ — ลองรีโหลดหน้า';
+  }
 }
 
 // ════ SAVE ════
@@ -1501,10 +1559,42 @@ async function callGS(params, url) {
   const base = url || scriptUrl;
   if (!base) throw new Error('ไม่มี URL');
   const qs = new URLSearchParams(params).toString();
-  const res = await fetch(base + '?' + qs);
-  return await res.json();
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 30000);
+  try {
+    const res = await fetch(base + '?' + qs, { signal: ctrl.signal });
+    clearTimeout(t);
+    return await res.json();
+  } catch(e) {
+    clearTimeout(t);
+    if (e.name === 'AbortError') throw new Error('หมดเวลาเชื่อมต่อ');
+    throw e;
+  }
 }
 
+// ════ DATE HELPERS ════
+function cleanDate(raw) {
+  if (!raw) return '—';
+  const s = String(raw).trim();
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) return s;
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+    const [y,m,d] = s.split('T')[0].split('-');
+    return parseInt(d)+'/'+parseInt(m)+'/'+y;
+  }
+  const dt = new Date(s);
+  if (!isNaN(dt.getTime())) return dt.getDate()+'/'+(dt.getMonth()+1)+'/'+dt.getFullYear();
+  return s;
+}
+function cleanTime(raw) {
+  if (!raw) return '—';
+  const s = String(raw).trim();
+  if (/^\d{1,2}:\d{2}$/.test(s)) return s;
+  const dt = new Date(s);
+  if (!isNaN(dt.getTime())) return String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');
+  const tm = s.match(/(\d{1,2}):(\d{2})/);
+  if (tm) return tm[1].padStart(2,'0')+':'+tm[2];
+  return s;
+}
 // ════ DATE HELPERS ════
 function formatDateInput(d) {
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
