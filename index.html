@@ -403,11 +403,13 @@ pre.code{
         <option value="">ทุกเดือน</option>
       </select>
     </div>
+    <div class="frow"><label>วันที่เริ่ม</label><input type="date" id="fDateFrom"></div>
+    <div class="frow"><label>วันที่สิ้นสุด</label><input type="date" id="fDateTo"></div>
     <div class="frow"><label>ผู้ขอเบิก</label>
       <select id="fRequester"><option value="">ทั้งหมด</option></select>
     </div>
     <button class="btn btn-primary btn-sm" onclick="loadHistory()">🔍 ดู</button>
-    <button class="btn btn-outline btn-sm" onclick="resetHistoryFilter()">✕</button>
+    <button class="btn btn-outline btn-sm" onclick="clearHistoryFilter()">✕ ล้างตัวกรอง</button>
   </div>
 
   <div class="card" style="margin-bottom:0;">
@@ -453,6 +455,7 @@ pre.code{
             <select id="rpRequester"><option value="">ทั้งหมด</option></select>
           </div>
           <button class="btn btn-primary btn-sm" onclick="loadReport()">🔍 ดู</button>
+          <button class="btn btn-outline btn-sm" onclick="clearReportFilter()">✕ ล้างตัวกรอง</button>
           <button class="btn btn-gold btn-sm" onclick="printReport()">🖨️ พิมพ์ / PDF</button>
         </div>
       </div>
@@ -1249,14 +1252,42 @@ async function loadHistory() {
   }
   document.getElementById('histBody').innerHTML =
     '<tr><td colspan="12"><div class="loader"><div class="loader-spin"></div><br>กำลังโหลด...</div></td></tr>';
-  const month = document.getElementById('fMonth').value;
-  const req   = document.getElementById('fRequester').value;
-  const params = { action:'getData' };
-  if (month) params.month = month;
-  if (req)   params.requester = req;
+  const month    = document.getElementById('fMonth').value;
+  const req      = document.getElementById('fRequester').value;
+  const dateFrom = document.getElementById('fDateFrom')?.value || '';
+  const dateTo   = document.getElementById('fDateTo')?.value || '';
   try {
-    const d = await callGS(params);
-    allHistory = (d.data||[]).sort((a,b) => (b['วันที่']||'').localeCompare(a['วันที่']||''));
+    const d = await callGS({ action:'getData' });
+    let rows = (d.data||[]).map(r => ({
+      ...r,
+      'วันที่':    normDate(r['วันที่']),
+      'เวลาเบิก': normTime(r['เวลาเบิก']),
+      'เวลาคืน':  normTime(r['เวลาคืน']),
+    }));
+    // กรองเดือน
+    if (month) rows = rows.filter(r => dateToYM(r['วันที่']) === month);
+    // กรองวันที่ช่วง
+    if (dateFrom) rows = rows.filter(r => {
+      const p = r['วันที่'].split('/');
+      if (p.length<3) return true;
+      const iso = p[2]+'-'+p[1]+'-'+p[0];
+      return iso >= dateFrom;
+    });
+    if (dateTo) rows = rows.filter(r => {
+      const p = r['วันที่'].split('/');
+      if (p.length<3) return true;
+      const iso = p[2]+'-'+p[1]+'-'+p[0];
+      return iso <= dateTo;
+    });
+    // กรองผู้ขอเบิก
+    if (req) rows = rows.filter(r => r['ผู้ขอเบิก'] === req);
+    // เรียงล่าสุดก่อน
+    allHistory = rows.sort((a,b) => {
+      const pa=a['วันที่'].split('/'), pb=b['วันที่'].split('/');
+      const ia = pa.length>=3?pa[2]+pa[1]+pa[0]:'';
+      const ib = pb.length>=3?pb[2]+pb[1]+pb[0]:'';
+      return ib.localeCompare(ia);
+    });
     renderHistory();
   } catch(e) {
     document.getElementById('histBody').innerHTML =
@@ -1265,10 +1296,24 @@ async function loadHistory() {
 }
 
 function resetHistoryFilter() {
+  clearHistoryFilter();
+}
+function clearHistoryFilter() {
   document.getElementById('fMonth').value = '';
   populateMonthSelect();
+  if(document.getElementById('fDateFrom')) document.getElementById('fDateFrom').value = '';
+  if(document.getElementById('fDateTo'))   document.getElementById('fDateTo').value = '';
   document.getElementById('fRequester').value = '';
   loadHistory();
+}
+function clearReportFilter() {
+  document.getElementById('rpMonth').value = '';
+  populateMonthSelect();
+  document.getElementById('rpDateFrom').value = '';
+  document.getElementById('rpDateTo').value = '';
+  document.getElementById('rpRequester').value = '';
+  document.getElementById('rpBody').innerHTML = '<tr><td colspan="11"><div class="empty">เลือกเดือนแล้วกด ดู</div></td></tr>';
+  document.getElementById('rpSumRow').style.display = 'none';
 }
 
 function renderHistory() {
@@ -1648,6 +1693,46 @@ function cleanTime(raw) {
   return s;
 }
 // ════ DATE HELPERS ════
+// แปลงค่าวันที่จาก Sheet (Date object string, dd/mm/yyyy, yyyy-mm-dd) → dd/mm/yyyy
+function normDate(v) {
+  if (!v) return '';
+  const s = String(v).trim();
+  // dd/mm/yyyy อยู่แล้ว
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) return s;
+  // yyyy-mm-dd
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+    const [y,m,d] = s.substring(0,10).split('-');
+    return d+'/'+m+'/'+y;
+  }
+  // Date object string เช่น "Fri Apr 10 2026 00:00:00 GMT+0700"
+  const dt = new Date(s);
+  if (!isNaN(dt.getTime())) {
+    return String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0')+'/'+dt.getFullYear();
+  }
+  return s;
+}
+
+// แปลงค่าเวลาจาก Sheet → hh:mm
+function normTime(v) {
+  if (!v) return '';
+  const s = String(v).trim();
+  // hh:mm หรือ hh:mm:ss อยู่แล้ว
+  if (/^\d{1,2}:\d{2}/.test(s)) return s.substring(0,5);
+  // Date object string
+  const dt = new Date(s);
+  if (!isNaN(dt.getTime())) {
+    return String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');
+  }
+  return s;
+}
+
+// dd/mm/yyyy → yyyy-mm-dd สำหรับเปรียบเทียบ
+function dateToYM(ddmmyyyy) {
+  const parts = ddmmyyyy.split('/');
+  if (parts.length < 3) return '';
+  return parts[2].substring(0,4) + '-' + parts[1].padStart(2,'0');
+}
+
 function formatDateInput(d) {
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
@@ -1690,13 +1775,22 @@ async function loadReport() {
   if (req)      params.requester = req;
 
   try {
-    const d = await callGS(params);
-    let rows = (d.data || []).sort((a,b) => (a['วันที่']||'').localeCompare(b['วันที่']||''));
-
-    // กรองตามช่วงวันที่ถ้ามี
+    const d = await callGS({ action: 'getData' });
+    let rows = (d.data || []).map(r => ({
+      ...r,
+      'วันที่':    normDate(r['วันที่']),
+      'เวลาเบิก': normTime(r['เวลาเบิก']),
+      'เวลาคืน':  normTime(r['เวลาคืน']),
+    }));
+    // กรองเดือน
+    if (month) rows = rows.filter(r => dateToYM(r['วันที่']) === month);
+    // กรองวันที่ช่วง
     if (dateFrom) {
-      const from = dateFrom.split('-').reverse().join('/');
-      rows = rows.filter(r => (r['วันที่']||'') >= from || !r['วันที่']);
+      rows = rows.filter(r => {
+        const p = r['วันที่'].split('/');
+        if (p.length<3) return true;
+        return p[2]+'-'+p[1]+'-'+p[0] >= dateFrom;
+      });
     }
     if (dateTo) {
       const to = dateTo.split('-').reverse().join('/');
