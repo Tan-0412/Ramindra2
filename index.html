@@ -774,6 +774,13 @@ function ok(data) {
         <div style="font-size:10px;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-bottom:6px;" id="suggestLabel">เลขไมล์ที่แนะนำ</div>
         <div style="font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:700;color:var(--gold2);" id="suggestVal">—</div>
         <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px;" id="suggestFrom"></div>
+        <input type="number" id="suggestEditInput" inputmode="numeric"
+          style="margin-top:10px;width:100%;padding:8px 12px;border-radius:8px;
+          font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;
+          background:rgba(255,255,255,0.1);border:1.5px solid rgba(240,192,80,0.4);
+          color:#fff;text-align:center;outline:none;"
+          placeholder="แก้ไขได้">
+        <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:4px;">แก้ไขได้ก่อนยืนยัน</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <button class="btn btn-green btn-full" onclick="confirmSuggest()">✅ ใช้ค่านี้</button>
@@ -1159,14 +1166,48 @@ async function initLoad() {
     if (todayRows.length === 0) {
       el.className = 'status-row empty';
       txt.textContent = 'วันนี้ยังไม่มีการบันทึก';
-      // แนะนำเลขไมล์จากครั้งล่าสุด
-      const prev = allRows.filter(r => r['เลขไมล์กลับ'])
-        .sort((a,b) => (b['วันที่']||'').localeCompare(a['วันที่']||''));
-      if (prev.length > 0) {
-        suggestMode = 'out'; suggestMile = prev[0]['เลขไมล์กลับ'];
-        showSuggest('💡','แนะนำเลขไมล์ก่อนออก','อ้างอิงจากเลขไมล์กลับล่าสุด',
-          `เลขไมล์กลับล่าสุด (${cleanDate(prev[0]['วันที่'])}) คือ ${parseInt(suggestMile).toLocaleString()} กม. ต้องการใช้เป็นเลขไมล์ออกวันนี้ไหม?`,
-          suggestMile, `จากวันที่ ${cleanDate(prev[0]['วันที่'])} · ไมล์กลับ`);
+
+      // ── ตรวจก่อนว่ามีไมล์กลับค้างจากเมื่อวานไหม ──
+      const yest = formatDateInput(new Date(Date.now() - 86400000));
+      const yestSend = formatDateSend(yest);
+      const yestPending = allRows.filter(r =>
+        (r['วันที่']||'').trim() === yestSend && r['เลขไมล์ไป'] && !r['เลขไมล์กลับ']
+      );
+
+      if (yestPending.length > 0) {
+        // กรณี: ลืมบันทึกเลขไมล์กลับเมื่อวาน
+        const target = yestPending[yestPending.length - 1];
+        // หาเลขไมล์กลับที่น่าจะเป็น = เลขไมล์ออกครั้งล่าสุดที่มี (อาจเป็นวันนี้ถ้ามีแล้ว)
+        const lastOut = allRows
+          .filter(r => r['เลขไมล์ไป'])
+          .sort((a,b) => (b['วันที่']||'').localeCompare(a['วันที่']||''));
+        // ใช้เลขไมล์ไปของวันนี้ถ้ามี หรือไมล์กลับล่าสุดแทน
+        const suggestBack = lastOut.length > 0 ? lastOut[0]['เลขไมล์ไป'] : '';
+        suggestMode = 'back_yesterday';
+        suggestMile = suggestBack;
+        suggestRowKey = target._row;
+        showSuggest(
+          '⚠️',
+          'ลืมบันทึกเลขไมล์กลับเมื่อวาน!',
+          `วันที่ ${cleanDate(yestSend)} ยังไม่มีเลขไมล์กลับ`,
+          `พบรายการออกเดินทางเมื่อวาน (${cleanDate(yestSend)}) ที่ยังไม่ได้บันทึกกลับ
+เลขไมล์ออก: ${parseInt(target['เลขไมล์ไป']).toLocaleString()} กม.
+
+ต้องการกรอกเลขไมล์กลับของเมื่อวานตอนนี้ไหม?`,
+          suggestBack || target['เลขไมล์ไป'],
+          `เลขไมล์ออกของเมื่อวาน (กรุณาแก้ไขให้ถูกต้อง)`
+        );
+      } else {
+        // ไม่มีค้าง → แนะนำเลขไมล์ออกวันนี้จากไมล์กลับล่าสุด
+        const prev = allRows.filter(r => r['เลขไมล์กลับ'])
+          .sort((a,b) => (b['วันที่']||'').localeCompare(a['วันที่']||''));
+        if (prev.length > 0) {
+          suggestMode = 'out'; suggestMile = prev[0]['เลขไมล์กลับ'];
+          showSuggest('💡','แนะนำเลขไมล์ก่อนออก','อ้างอิงจากเลขไมล์กลับล่าสุด',
+            `เลขไมล์กลับล่าสุด (${cleanDate(prev[0]['วันที่'])}) คือ ${parseInt(suggestMile).toLocaleString()} กม.
+ต้องการใช้เป็นเลขไมล์ออกวันนี้ไหม?`,
+            suggestMile, `จากวันที่ ${cleanDate(prev[0]['วันที่'])} · ไมล์กลับ`);
+        }
       }
     } else {
       const last = todayRows[todayRows.length-1];
@@ -1231,6 +1272,34 @@ async function saveRecord(type) {
           return;
         }
       }
+
+      // ── กรณี 1: เช็คว่าเมื่อวานมีไมล์ออกแต่ไม่มีไมล์กลับไหม ──
+      const yest = formatDateInput(new Date(Date.now() - 86400000));
+      const yestSend = formatDateSend(yest);
+      const ymYest = yest.substring(0,7);
+      let yestData = allChk;
+      if (ymYest !== ym) {
+        try { const r2 = await callGS({action:'getData',month:ymYest}); yestData = r2.data||[]; } catch(e2){}
+      }
+      const yestPending = yestData.filter(r => (r['วันที่']||'').trim()===yestSend && r['เลขไมล์ไป'] && !r['เลขไมล์กลับ']);
+      if (yestPending.length > 0) {
+        const target = yestPending[yestPending.length-1];
+        suggestMode = 'out_also_back_yest';
+        suggestMile = mile;
+        suggestRowKey = target._row;
+        _pendingOutData = { date, detail, requester, approver, note, mile, timeOut };
+        showSuggest(
+          '⚠️',
+          'พบไมล์กลับค้างเมื่อวาน!',
+          `วันที่ ${cleanDate(yestSend)} ยังไม่มีเลขไมล์กลับ`,
+          `เมื่อวาน (${cleanDate(yestSend)}) มีการออกเดินทาง (ไมล์ออก ${parseInt(target['เลขไมล์ไป']).toLocaleString()} กม.) แต่ยังไม่ได้บันทึกกลับ
+
+ต้องการให้เลขไมล์ออกวันนี้ (${parseInt(mile).toLocaleString()} กม.) ไปบันทึกเป็นไมล์กลับของเมื่อวานด้วยไหม?`,
+          mile,
+          `เลขไมล์ออกวันนี้ที่กำลังบันทึก`
+        );
+        return; // หยุดรอผู้ใช้ยืนยัน
+      }
     } catch(e) { /* ถ้า check ไม่ได้ให้ผ่านต่อ */ }
 
     try {
@@ -1254,9 +1323,38 @@ async function saveRecord(type) {
     } catch(e) { toast('❌ '+e.message, 'err'); }
 
   } else {
-    // ตรวจสอบว่ามีแถวค้างจากเมื่อวานไหม
+    // ── กรณี 2: วันนี้ไม่มีไมล์ออก แต่กำลังจะบันทึกกลับ ──
+    const mile = document.getElementById('mileBack').value;
+    if (!mile) { toast('กรุณากรอกเลขไมล์หลังกลับ', 'err'); return; }
+    try {
+      const ym = date.substring(0,7);
+      const chk = await callGS({ action:'getData', month: ym });
+      const allChk = chk.data || [];
+      const dateSend = formatDateSend(date);
+      const todayOut = allChk.filter(r => (r['วันที่']||'').trim()===dateSend && r['เลขไมล์ไป'] && !r['เลขไมล์กลับ']);
+      if (todayOut.length === 0) {
+        // ไม่มีไมล์ออกวันนี้เลย → แนะนำให้เพิ่มไมล์ออกก่อน
+        const lastBack = allChk.filter(r=>r['เลขไมล์กลับ']).sort((a,b)=>(b['วันที่']||'').localeCompare(a['วันที่']||''));
+        const suggestOut = lastBack.length > 0 ? lastBack[0]['เลขไมล์กลับ'] : '';
+        suggestMode = 'back_no_out';
+        suggestMile = suggestOut;
+        _pendingBackMile = mile;
+        showSuggest(
+          '⚠️',
+          'ยังไม่ได้บันทึกออกวันนี้!',
+          'ไม่พบเลขไมล์ออกของวันนี้',
+          `วันนี้ยังไม่มีการบันทึกออกเดินทาง
+ต้องการให้ระบบบันทึกเลขไมล์ออกให้อัตโนมัติโดยใช้เลขไมล์กลับล่าสุด (${suggestOut?parseInt(suggestOut).toLocaleString():'—'} กม.) ด้วยไหม?`,
+          suggestOut,
+          `เลขไมล์กลับล่าสุด (แก้ไขได้)`
+        );
+        return;
+      }
+    } catch(e) {}
+
+    // ตรวจสอบว่ามีแถวค้างจากเมื่อวานไหม (เดิม)
     const hasSuggest = await checkSuggestBack();
-    if (hasSuggest) return; // แสดง modal แนะนำแทน
+    if (hasSuggest) return;
 
     const mile = document.getElementById('mileBack').value;
     if (!mile) { toast('กรุณากรอกเลขไมล์หลังกลับ', 'err'); return; }
@@ -1565,8 +1663,9 @@ function showSuggest(icon, title, sub, desc, mile, from) {
   document.getElementById('suggestTitle').textContent = title;
   document.getElementById('suggestSub').textContent   = sub;
   document.getElementById('suggestDesc').textContent  = desc;
-  document.getElementById('suggestVal').textContent   = parseInt(mile).toLocaleString();
+  document.getElementById('suggestVal').textContent   = mile ? parseInt(mile).toLocaleString() : '—';
   document.getElementById('suggestFrom').textContent  = from;
+  document.getElementById('suggestEditInput').value   = mile || '';
   document.getElementById('suggestModal').classList.add('open');
 }
 
@@ -1575,26 +1674,113 @@ function closeSuggest() {
   suggestMode = ''; suggestMile = ''; suggestRowKey = '';
 }
 
+let _pendingOutData = null;
+let _pendingBackMile = null;
+
 function confirmSuggest() {
-  if (!suggestMile) { closeSuggest(); return; }
+  const val = document.getElementById('suggestEditInput').value || suggestMile;
+
   if (suggestMode === 'out') {
-    document.getElementById('mileOut').value  = suggestMile;
-    document.getElementById('timeOut').value  = formatDateTime(new Date());
-    toast('✅ ใส่เลขไมล์ ' + parseInt(suggestMile).toLocaleString() + ' แล้ว', 'ok');
-  } else if (suggestMode === 'back_yesterday') {
-    // บันทึกกลับให้แถวเมื่อวาน
+    // แนะนำไมล์ออกจากไมล์กลับล่าสุด
+    document.getElementById('mileOut').value = val;
+    document.getElementById('timeOut').value = formatDateTime(new Date());
+    toast('✅ ใส่เลขไมล์ออก ' + parseInt(val).toLocaleString() + ' แล้ว', 'ok');
+    closeSuggest();
+
+  } else if (suggestMode === 'out_also_back_yest') {
+    // กรณี 1: บันทึกไมล์กลับเมื่อวานก่อน แล้วค่อยบันทึกไมล์ออกวันนี้
+    closeSuggest();
     const timeBack = formatDateTime(new Date());
     callGS({
       action: 'updateRow',
       _row: suggestRowKey,
-      'เลขไมล์กลับ': suggestMile,
+      'เลขไมล์กลับ': val,
       'เวลาคืน': timeBack,
     }).then(r => {
-      if (r.ok) { toast('✅ บันทึกเลขไมล์กลับของเมื่อวานแล้ว!', 'ok'); checkTodayStatus(); }
+      if (r.ok) {
+        toast('✅ บันทึกไมล์กลับเมื่อวานแล้ว กำลังบันทึกออกวันนี้...', 'ok');
+        // บันทึกไมล์ออกวันนี้ต่อ
+        if (_pendingOutData) {
+          const p = _pendingOutData;
+          callGS({
+            action:'addRow',
+            'วันที่': formatDateSend(p.date),
+            'รายละเอียดการใช้รถ': p.detail,
+            'ผู้ขอเบิก': p.requester,
+            'ผู้ให้เบิก': p.approver,
+            'เลขไมล์ไป': p.mile,
+            'เวลาเบิก': p.timeOut,
+            'หมายเหตุ': p.note,
+          }).then(r2 => {
+            if (r2.ok) { toast('✅ บันทึกออกเดินทางวันนี้แล้วด้วย!', 'ok'); initLoad(); loadMeta(); }
+            else toast('❌ บันทึกออกวันนี้ไม่สำเร็จ', 'err');
+          });
+          _pendingOutData = null;
+        }
+      } else toast('❌ ' + (r.error||'ไม่สำเร็จ'), 'err');
+    });
+
+  } else if (suggestMode === 'back_no_out') {
+    // กรณี 2: บันทึกไมล์ออกก่อน แล้วค่อยบันทึกไมล์กลับ
+    closeSuggest();
+    const date = document.getElementById('recDate').value;
+    const getVal = (selId, customId) => {
+      const sel = document.getElementById(selId);
+      return sel.value==='__custom__'?(document.getElementById(customId)?.value.trim()||''):sel.value;
+    };
+    const timeOut = formatDateTime(new Date());
+    callGS({
+      action:'addRow',
+      'วันที่': formatDateSend(date),
+      'รายละเอียดการใช้รถ': getVal('recDetail','recDetailCustom'),
+      'ผู้ขอเบิก': getVal('recRequester','recRequesterCustom'),
+      'ผู้ให้เบิก': getVal('recApprover','recApproverCustom'),
+      'เลขไมล์ไป': val,
+      'เวลาเบิก': timeOut,
+      'หมายเหตุ': document.getElementById('recNote').value.trim(),
+    }).then(r => {
+      if (r.ok) {
+        toast('✅ บันทึกไมล์ออกแล้ว กำลังบันทึกกลับ...', 'ok');
+        // บันทึกไมล์กลับต่อ
+        return callGS({action:'getData', month:date.substring(0,7)}).then(d=>{
+          const rows = (d.data||[]).filter(r2=>r2['วันที่']===formatDateSend(date)&&!r2['เลขไมล์กลับ']);
+          if (rows.length===0) { toast('⚠️ ไม่พบแถวสำหรับบันทึกกลับ','err'); return; }
+          const target = rows[rows.length-1];
+          const backMile = _pendingBackMile || document.getElementById('mileBack').value;
+          return callGS({
+            action:'updateRow',
+            _row: target._row,
+            'เลขไมล์กลับ': backMile,
+            'เวลาคืน': formatDateTime(new Date()),
+          }).then(r2=>{
+            if (r2.ok) {
+              toast('✅ บันทึกครบทั้งออกและกลับแล้ว!','ok');
+              document.getElementById('mileOut').value='';
+              document.getElementById('mileBack').value='';
+              _pendingBackMile=null;
+              initLoad();
+            }
+          });
+        });
+      } else toast('❌ '+(r.error||'ไม่สำเร็จ'),'err');
+    });
+
+  } else if (suggestMode === 'back_yesterday') {
+    const timeBack = formatDateTime(new Date());
+    callGS({
+      action: 'updateRow',
+      _row: suggestRowKey,
+      'เลขไมล์กลับ': val,
+      'เวลาคืน': timeBack,
+    }).then(r => {
+      if (r.ok) { toast('✅ บันทึกเลขไมล์กลับของเมื่อวานแล้ว!', 'ok'); initLoad(); }
       else toast('❌ ' + (r.error||'ไม่สำเร็จ'), 'err');
     });
+    closeSuggest();
+
+  } else {
+    closeSuggest();
   }
-  closeSuggest();
 }
 
 // ════ CAMERA ════
