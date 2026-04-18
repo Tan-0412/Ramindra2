@@ -306,7 +306,7 @@ pre.code{
         <div class="frow">
           <label>รายละเอียดการใช้รถ</label>
           <select id="recDetail" onchange="checkCustom('recDetail','recDetailCustom')">
-            <option value="ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์">ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์</option>
+            <option value="ไปทำงานจาก รามอินทรา ก.ม.2 - สุวินทวงศ์รวมถึงใช้วิ่งงานระหว่างวัน (ถ้ามี)">ไปทำงานจาก รามอินทรา ก.ม.2 - สุวินทวงศ์รวมถึงใช้วิ่งงานระหว่างวัน (ถ้ามี)</option>
             <option value="__custom__">อื่นๆ (ระบุเอง)</option>
           </select>
           <input type="text" id="recDetailCustom" placeholder="ระบุรายละเอียด..." style="display:none;margin-top:6px;">
@@ -978,7 +978,7 @@ function ddRenderAll() {
   const data = ddLoad();
   if (!data.hidden) data.hidden = { detail:[], req:[], apr:[] };
   const DEF = {
-    detail: ['ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์'],
+    detail: ['ไปทำงานจาก รามอินทรา ก.ม.2 - สุวินทวงศ์รวมถึงใช้วิ่งงานระหว่างวัน (ถ้ามี)'],
     req:    ['รวิวรรณ'],
     apr:    ['รวิวรรณ'],
   };
@@ -1020,7 +1020,7 @@ function ddRemove(key, encodedVal) {
   const data = ddLoad();
   if (!data.hidden) data.hidden = { detail:[], req:[], apr:[] };
   const DEF = {
-    detail: ['ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์'],
+    detail: ['ไปทำงานจาก รามอินทรา ก.ม.2 - สุวินทวงศ์รวมถึงใช้วิ่งงานระหว่างวัน (ถ้ามี)'],
     req:    ['รวิวรรณ'],
     apr:    ['รวิวรรณ'],
   };
@@ -1039,7 +1039,7 @@ function ddRemove(key, encodedVal) {
 function applyDdToDropdowns() {
   const data = ddLoad();
   if (!data.hidden) data.hidden = { detail:[], req:[], apr:[] };
-  const DEF_DETAIL = ['ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์'];
+  const DEF_DETAIL = ['ไปทำงานจาก รามอินทรา ก.ม.2 - สุวินทวงศ์รวมถึงใช้วิ่งงานระหว่างวัน (ถ้ามี)'];
   const DEF_REQ    = ['รวิวรรณ'];
   const DEF_APR    = ['รวิวรรณ'];
   const visDetail = DEF_DETAIL.filter(v => !(data.hidden.detail||[]).includes(v));
@@ -1060,7 +1060,7 @@ async function loadMeta() {
     const d = await callGS({ action: 'getMeta' });
     const ddData = ddLoad();
     if (!ddData.hidden) ddData.hidden = { detail:[], req:[], apr:[] };
-    const DEF_DETAIL = ['ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์'];
+    const DEF_DETAIL = ['ไปทำงานจาก รามอินทรา ก.ม.2 - สุวินทวงศ์รวมถึงใช้วิ่งงานระหว่างวัน (ถ้ามี)'];
     const DEF_REQ = ['รวิวรรณ'];
     const DEF_APR = ['รวิวรรณ'];
     const visDetail = DEF_DETAIL.filter(v => !(ddData.hidden.detail||[]).includes(v));
@@ -1148,7 +1148,7 @@ async function initLoad() {
     const d = metaRes;
     const ddData = ddLoad();
     if (!ddData.hidden) ddData.hidden = { detail:[], req:[], apr:[] };
-    const DEF_DETAIL = ['ใช้งานไปกลับ ก.ม.2 - สุวินทวงศ์'];
+    const DEF_DETAIL = ['ไปทำงานจาก รามอินทรา ก.ม.2 - สุวินทวงศ์รวมถึงใช้วิ่งงานระหว่างวัน (ถ้ามี)'];
     const DEF_REQ = ['รวิวรรณ']; const DEF_APR = ['รวิวรรณ'];
     const visDetail = DEF_DETAIL.filter(v => !(ddData.hidden.detail||[]).includes(v));
     const visReq    = DEF_REQ.filter(v => !(ddData.hidden.req||[]).includes(v));
