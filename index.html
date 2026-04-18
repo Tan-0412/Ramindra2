@@ -1361,8 +1361,7 @@ async function saveRecord(type) {
     const hasSuggest = await checkSuggestBack();
     if (hasSuggest) return;
 
-    const mile = document.getElementById('mileBack').value;
-    if (!mile) { toast('กรุณากรอกเลขไมล์หลังกลับ', 'err'); return; }
+    // mile ถูกประกาศแล้วข้างบน ไม่ต้องประกาศซ้ำ
     const timeBack = document.getElementById('timeBack').value || formatDateTime(new Date());
     try {
       const ym = date.substring(0,7);
