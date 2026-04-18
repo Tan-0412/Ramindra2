@@ -898,10 +898,13 @@ function init() {
   }
 }
 
+let timeOutFixed = false;
+let timeBackFixed = false;
+
 function updateNowDisplay() {
   const t = formatDateTime(new Date());
-  document.getElementById('timeOutDisplay').textContent = t;
-  document.getElementById('timeBackDisplay').textContent = t;
+  if (!timeOutFixed)  document.getElementById('timeOutDisplay').textContent = t;
+  if (!timeBackFixed) document.getElementById('timeBackDisplay').textContent = t;
 }
 
 // ════ TABS ════
@@ -1127,6 +1130,7 @@ async function checkTodayStatus() {
           document.getElementById('timeOut').value = last['เวลาเบิก'];
           document.getElementById('timeOutDisplay').textContent = last['เวลาเบิก'];
           document.getElementById('timeOutLabel').textContent = 'เวลาออก';
+          timeOutFixed = true;
         }
         // prefill เลขไมล์กลับ + เวลากลับ
         if (last['เลขไมล์กลับ']) document.getElementById('mileBack').value = last['เลขไมล์กลับ'];
@@ -1134,6 +1138,7 @@ async function checkTodayStatus() {
           document.getElementById('timeBack').value = last['เวลาคืน'];
           document.getElementById('timeBackDisplay').textContent = last['เวลาคืน'];
           document.getElementById('timeBackLabel').textContent = 'เวลากลับ';
+          timeBackFixed = true;
         }
       } else {
         el.className = 'status-row out';
@@ -1144,6 +1149,7 @@ async function checkTodayStatus() {
           document.getElementById('timeOut').value = last['เวลาเบิก'];
           document.getElementById('timeOutDisplay').textContent = last['เวลาเบิก'];
           document.getElementById('timeOutLabel').textContent = 'เวลาออก';
+          timeOutFixed = true;
         }
       }
     }
@@ -1246,6 +1252,7 @@ async function initLoad() {
           document.getElementById('timeOut').value = last['เวลาเบิก'];
           document.getElementById('timeOutDisplay').textContent = last['เวลาเบิก'];
           document.getElementById('timeOutLabel').textContent = 'เวลาออก';
+          timeOutFixed = true;
         }
         // prefill เลขไมล์กลับ + เวลากลับ
         if (last['เลขไมล์กลับ']) document.getElementById('mileBack').value = last['เลขไมล์กลับ'];
@@ -1253,6 +1260,7 @@ async function initLoad() {
           document.getElementById('timeBack').value = last['เวลาคืน'];
           document.getElementById('timeBackDisplay').textContent = last['เวลาคืน'];
           document.getElementById('timeBackLabel').textContent = 'เวลากลับ';
+          timeBackFixed = true;
         }
       } else {
         el.className = 'status-row out';
@@ -1263,6 +1271,7 @@ async function initLoad() {
           document.getElementById('timeOut').value = last['เวลาเบิก'];
           document.getElementById('timeOutDisplay').textContent = last['เวลาเบิก'];
           document.getElementById('timeOutLabel').textContent = 'เวลาออก';
+          timeOutFixed = true;
         }
       }
     }
