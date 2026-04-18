@@ -1122,7 +1122,10 @@ async function checkTodayStatus() {
         txt.textContent = `✅ กลับถึงที่แล้ว · วันนี้ ${isNaN(dist)?'-':dist.toLocaleString()} กม.`;
       } else {
         el.className = 'status-row out';
-        txt.textContent = `🚗 ออกเดินทางแล้ว เวลา ${last['เวลาเบิก']||'-'} · รอบันทึกกลับ`;
+        txt.textContent = `🚗 ออกเดินทางแล้ว เวลา ${last['เวลาเบิก']||'-'} · ไมล์ออก ${parseInt(last['เลขไมล์ไป']||0).toLocaleString()} กม. · รอบันทึกกลับ`;
+        // แสดงเลขไมล์ออกที่บันทึกแล้วใน input
+        if (last['เลขไมล์ไป']) document.getElementById('mileOut').value = last['เลขไมล์ไป'];
+        if (last['เวลาเบิก']) document.getElementById('timeOut').value = last['เวลาเบิก'];
       }
     }
   } catch(e) {}
@@ -1220,7 +1223,10 @@ async function initLoad() {
         txt.textContent = `✅ กลับถึงที่แล้ว · วันนี้ ${isNaN(dist)?'-':dist.toLocaleString()} กม.`;
       } else {
         el.className = 'status-row out';
-        txt.textContent = `🚗 ออกเดินทางแล้ว เวลา ${cleanTime(last['เวลาเบิก'])||'-'} · รอบันทึกกลับ`;
+        txt.textContent = `🚗 ออกเดินทางแล้ว เวลา ${cleanTime(last['เวลาเบิก'])||'-'} · ไมล์ออก ${parseInt(last['เลขไมล์ไป']||0).toLocaleString()} กม. · รอบันทึกกลับ`;
+        // แสดงเลขไมล์ออกที่บันทึกแล้วใน input
+        if (last['เลขไมล์ไป']) document.getElementById('mileOut').value = last['เลขไมล์ไป'];
+        if (last['เวลาเบิก']) document.getElementById('timeOut').value = last['เวลาเบิก'];
       }
     }
   } catch(e) {
