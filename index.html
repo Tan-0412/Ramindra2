@@ -345,7 +345,7 @@ pre.code{
           <input type="number" id="mileOut" placeholder="เช่น 45230" inputmode="numeric">
         </div>
         <div class="time-display">
-          <span class="tl">วันเวลาปัจจุบัน</span>
+          <span class="tl" id="timeOutLabel">เวลาปัจจุบัน</span>
           <span class="tv" id="timeOutDisplay">--:--</span>
         </div>
       </div>
@@ -364,7 +364,7 @@ pre.code{
           <input type="number" id="mileBack" placeholder="เช่น 45280" inputmode="numeric">
         </div>
         <div class="time-display">
-          <span class="tl">วันเวลาปัจจุบัน</span>
+          <span class="tl" id="timeBackLabel">เวลาปัจจุบัน</span>
           <span class="tv" id="timeBackDisplay">--:--</span>
         </div>
       </div>
@@ -993,7 +993,8 @@ function ddRenderAll() {
         border:1px solid var(--gray2);border-radius:20px;padding:4px 10px;font-size:12px;font-weight:600;">
         ${v}
         <button onclick="ddRemove('${key}','${encodeURIComponent(v)}')"
-          style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;line-height:1;padding:0 0 0 2px;">×</button>
+          style="background:none;border:none;cursor:pointer;color:var(--red);font-size:16px;line-height:1;
+          padding:2px 4px;min-width:28px;min-height:28px;display:flex;align-items:center;justify-content:center;">×</button>
       </span>`).join('');
   });
 }
@@ -1120,12 +1121,30 @@ async function checkTodayStatus() {
         el.className = 'status-row back';
         const dist = parseInt(last['เลขไมล์กลับ']) - parseInt(last['เลขไมล์ไป']);
         txt.textContent = `✅ กลับถึงที่แล้ว · วันนี้ ${isNaN(dist)?'-':dist.toLocaleString()} กม.`;
+        // prefill เลขไมล์ออก + เวลาออก
+        if (last['เลขไมล์ไป']) document.getElementById('mileOut').value = last['เลขไมล์ไป'];
+        if (last['เวลาเบิก']) {
+          document.getElementById('timeOut').value = last['เวลาเบิก'];
+          document.getElementById('timeOutDisplay').textContent = last['เวลาเบิก'];
+          document.getElementById('timeOutLabel').textContent = 'เวลาออก';
+        }
+        // prefill เลขไมล์กลับ + เวลากลับ
+        if (last['เลขไมล์กลับ']) document.getElementById('mileBack').value = last['เลขไมล์กลับ'];
+        if (last['เวลาคืน']) {
+          document.getElementById('timeBack').value = last['เวลาคืน'];
+          document.getElementById('timeBackDisplay').textContent = last['เวลาคืน'];
+          document.getElementById('timeBackLabel').textContent = 'เวลากลับ';
+        }
       } else {
         el.className = 'status-row out';
         txt.textContent = `🚗 ออกเดินทางแล้ว เวลา ${last['เวลาเบิก']||'-'} · ไมล์ออก ${parseInt(last['เลขไมล์ไป']||0).toLocaleString()} กม. · รอบันทึกกลับ`;
-        // แสดงเลขไมล์ออกที่บันทึกแล้วใน input
+        // แสดงเลขไมล์และเวลาออกที่บันทึกแล้วใน input
         if (last['เลขไมล์ไป']) document.getElementById('mileOut').value = last['เลขไมล์ไป'];
-        if (last['เวลาเบิก']) document.getElementById('timeOut').value = last['เวลาเบิก'];
+        if (last['เวลาเบิก']) {
+          document.getElementById('timeOut').value = last['เวลาเบิก'];
+          document.getElementById('timeOutDisplay').textContent = last['เวลาเบิก'];
+          document.getElementById('timeOutLabel').textContent = 'เวลาออก';
+        }
       }
     }
   } catch(e) {}
@@ -1221,12 +1240,30 @@ async function initLoad() {
         el.className = 'status-row back';
         const dist = parseInt(last['เลขไมล์กลับ']) - parseInt(last['เลขไมล์ไป']);
         txt.textContent = `✅ กลับถึงที่แล้ว · วันนี้ ${isNaN(dist)?'-':dist.toLocaleString()} กม.`;
+        // prefill เลขไมล์ออก + เวลาออก
+        if (last['เลขไมล์ไป']) document.getElementById('mileOut').value = last['เลขไมล์ไป'];
+        if (last['เวลาเบิก']) {
+          document.getElementById('timeOut').value = last['เวลาเบิก'];
+          document.getElementById('timeOutDisplay').textContent = last['เวลาเบิก'];
+          document.getElementById('timeOutLabel').textContent = 'เวลาออก';
+        }
+        // prefill เลขไมล์กลับ + เวลากลับ
+        if (last['เลขไมล์กลับ']) document.getElementById('mileBack').value = last['เลขไมล์กลับ'];
+        if (last['เวลาคืน']) {
+          document.getElementById('timeBack').value = last['เวลาคืน'];
+          document.getElementById('timeBackDisplay').textContent = last['เวลาคืน'];
+          document.getElementById('timeBackLabel').textContent = 'เวลากลับ';
+        }
       } else {
         el.className = 'status-row out';
         txt.textContent = `🚗 ออกเดินทางแล้ว เวลา ${cleanTime(last['เวลาเบิก'])||'-'} · ไมล์ออก ${parseInt(last['เลขไมล์ไป']||0).toLocaleString()} กม. · รอบันทึกกลับ`;
-        // แสดงเลขไมล์ออกที่บันทึกแล้วใน input
+        // แสดงเลขไมล์และเวลาออกที่บันทึกแล้วใน input
         if (last['เลขไมล์ไป']) document.getElementById('mileOut').value = last['เลขไมล์ไป'];
-        if (last['เวลาเบิก']) document.getElementById('timeOut').value = last['เวลาเบิก'];
+        if (last['เวลาเบิก']) {
+          document.getElementById('timeOut').value = last['เวลาเบิก'];
+          document.getElementById('timeOutDisplay').textContent = last['เวลาเบิก'];
+          document.getElementById('timeOutLabel').textContent = 'เวลาออก';
+        }
       }
     }
   } catch(e) {
