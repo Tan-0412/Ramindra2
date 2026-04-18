@@ -1134,11 +1134,13 @@ let _cachedTodayRows = null; // cache ไว้ใช้ในหน้าบั
 async function initLoad() {
   const today = formatDateInput(new Date());
   const ym = today.substring(0,7);
+  // อัปเดต status ให้รู้ว่ากำลังโหลด
+  document.getElementById('todayStatusTxt').textContent = 'กำลังโหลดข้อมูล...';
   try {
-    // ยิง 2 calls พร้อมกัน
+    // ยิง 2 calls พร้อมกัน โดยมี fallback ถ้า error
     const [metaRes, dataRes] = await Promise.all([
-      callGS({ action: 'getMeta' }),
-      callGS({ action: 'getData', month: ym })
+      callGS({ action: 'getMeta' }).catch(() => ({ requesters:[], approvers:[], details:[] })),
+      callGS({ action: 'getData', month: ym }).catch(() => ({ data:[] }))
     ]);
     setConn(true);
 
@@ -1223,7 +1225,10 @@ async function initLoad() {
     }
   } catch(e) {
     setConn(false);
-    document.getElementById('todayStatusTxt').textContent = 'เชื่อมต่อไม่ได้ — ลองรีโหลดหน้า';
+    const el = document.getElementById('todayStatus');
+    const txt = document.getElementById('todayStatusTxt');
+    el.className = 'status-row empty';
+    txt.textContent = 'เชื่อมต่อไม่ได้ — ลองรีโหลดหน้า (' + e.message + ')';
   }
 }
 
