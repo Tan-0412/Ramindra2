@@ -1356,7 +1356,13 @@ async function saveRecord(type) {
       const chk = await callGS({ action:'getData', month: ym });
       const allChk = chk.data || [];
       const dateSend = formatDateSend(date);
-      const todayOut = allChk.filter(r => (r['วันที่']||'').trim()===dateSend && r['เลขไมล์ไป'] && !r['เลขไมล์กลับ']);
+      const todayAll = allChk.filter(r => (r['วันที่']||'').trim()===dateSend && r['เลขไมล์ไป']);
+      const todayOut = todayAll.filter(r => !r['เลขไมล์กลับ']);
+      // ถ้ามีแถวของวันนี้และทุกแถวมีไมล์กลับแล้ว → บันทึกกลับแล้ว
+      if (todayAll.length > 0 && todayOut.length === 0) {
+        toast('✅ บันทึกกลับไปแล้วในวันนี้', 'ok');
+        return;
+      }
       if (todayOut.length === 0) {
         // ไม่มีไมล์ออกวันนี้เลย → แนะนำให้เพิ่มไมล์ออกก่อน
         const lastBack = allChk.filter(r=>r['เลขไมล์กลับ']).sort((a,b)=>(b['วันที่']||'').localeCompare(a['วันที่']||''));
