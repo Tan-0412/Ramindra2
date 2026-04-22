@@ -1279,10 +1279,16 @@ async function saveRecord(type) {
       const allChk = chk.data || [];
       const dateSend = formatDateSend(date);
 
-      // ฟีเจอร์ 1: ห้ามบันทึกซ้ำวันเดียวและเที่ยวเดียวกัน
-      const dupTrip = allChk.filter(r => (r['วันที่']||'').trim() === dateSend && r['เลขไมล์ไป'] && !r['เลขไมล์กลับ']);
+      // ฟีเจอร์ 1: ห้ามบันทึกซ้ำวันเดียวกัน ไม่ว่าเวลาจะต่างกันหรือไม่
+      const sameDayAll = allChk.filter(r => (r['วันที่']||'').trim() === dateSend && r['เลขไมล์ไป']);
+      const dupTrip = sameDayAll.filter(r => !r['เลขไมล์กลับ']);
+      const dupDone  = sameDayAll.filter(r =>  r['เลขไมล์กลับ']);
       if (dupTrip.length > 0) {
         toast('⚠️ วันนี้มีเที่ยวที่ยังไม่ได้บันทึกกลับอยู่! กรุณาบันทึกเลขไมล์กลับก่อน', 'err');
+        return;
+      }
+      if (dupDone.length > 0) {
+        toast('⚠️ วันนี้บันทึกครบแล้ว (ออก+กลับ) ไม่อนุญาตให้บันทึกซ้ำในวันเดียวกัน', 'err');
         return;
       }
 
