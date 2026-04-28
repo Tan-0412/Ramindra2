@@ -135,7 +135,17 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--tx);min-h
   border-radius:10px;padding:10px 12px;text-align:center;min-width:108px;
 }
 .time-display .tl{font-size:9px;color:rgba(255,255,255,0.45);display:block;margin-bottom:3px;}
-.time-display .tv{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--gold2);font-weight:600;}
+.time-display .tv{
+  font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--gold2);font-weight:700;
+  background:transparent;border:none;outline:none;width:100%;text-align:center;
+  cursor:text;padding:0;
+}
+.time-display .tv:focus{
+  background:rgba(255,255,255,0.1);border-radius:6px;outline:2px solid var(--gold2);
+}
+.time-display.user-edited{
+  border-color:rgba(240,192,80,0.5);background:rgba(240,192,80,0.08);
+}
 
 /* ── STATUS ── */
 .status-row{display:flex;align-items:center;gap:8px;padding:10px 14px;
@@ -344,9 +354,12 @@ pre.code{
           <label>เลขไมล์ (กม.)</label>
           <input type="number" id="mileOut" placeholder="เช่น 45230" inputmode="numeric">
         </div>
-        <div class="time-display">
+        <div class="time-display" id="timeOutBox">
           <span class="tl" id="timeOutLabel">เวลาปัจจุบัน</span>
-          <span class="tv" id="timeOutDisplay">--:--</span>
+          <input type="time" class="tv" id="timeOutDisplay"
+            oninput="onTimeInputChange('out')"
+            onblur="onTimeInputBlur('out')"
+            title="แตะเพื่อแก้ไขเวลา">
         </div>
       </div>
       <button class="btn-cam" onclick="openCamera('out')">
@@ -363,9 +376,12 @@ pre.code{
           <label>เลขไมล์ (กม.)</label>
           <input type="number" id="mileBack" placeholder="เช่น 45280" inputmode="numeric">
         </div>
-        <div class="time-display">
+        <div class="time-display" id="timeBackBox">
           <span class="tl" id="timeBackLabel">เวลาปัจจุบัน</span>
-          <span class="tv" id="timeBackDisplay">--:--</span>
+          <input type="time" class="tv" id="timeBackDisplay"
+            oninput="onTimeInputChange('back')"
+            onblur="onTimeInputBlur('back')"
+            title="แตะเพื่อแก้ไขเวลา">
         </div>
       </div>
       <button class="btn-cam" onclick="openCamera('back')">
@@ -900,11 +916,56 @@ function init() {
 
 let timeOutFixed = false;
 let timeBackFixed = false;
+let timeOutUserEdited = false;
+let timeBackUserEdited = false;
 
 function updateNowDisplay() {
   const t = formatDateTime(new Date());
-  if (!timeOutFixed)  document.getElementById('timeOutDisplay').textContent = t;
-  if (!timeBackFixed) document.getElementById('timeBackDisplay').textContent = t;
+  const hhmm = t.substring(0,5); // "HH:MM"
+  if (!timeOutFixed && !timeOutUserEdited) {
+    document.getElementById('timeOutDisplay').value = hhmm;
+    document.getElementById('timeOut').value = t;
+  }
+  if (!timeBackFixed && !timeBackUserEdited) {
+    document.getElementById('timeBackDisplay').value = hhmm;
+    document.getElementById('timeBack').value = t;
+  }
+}
+
+function onTimeInputChange(mode) {
+  if (mode === 'out') {
+    timeOutUserEdited = true;
+    timeOutFixed = true;
+    const val = document.getElementById('timeOutDisplay').value; // "HH:MM"
+    document.getElementById('timeOut').value = val;
+    document.getElementById('timeOutLabel').textContent = 'เวลาออก (แก้ไขแล้ว)';
+    document.getElementById('timeOutBox').classList.add('user-edited');
+  } else {
+    timeBackUserEdited = true;
+    timeBackFixed = true;
+    const val = document.getElementById('timeBackDisplay').value;
+    document.getElementById('timeBack').value = val;
+    document.getElementById('timeBackLabel').textContent = 'เวลากลับ (แก้ไขแล้ว)';
+    document.getElementById('timeBackBox').classList.add('user-edited');
+  }
+}
+
+function onTimeInputBlur(mode) {
+  // ถ้าลบค่าออกหมด ให้รีเซ็ตกลับเป็น live clock
+  const el = document.getElementById(mode === 'out' ? 'timeOutDisplay' : 'timeBackDisplay');
+  if (!el.value) {
+    if (mode === 'out') {
+      timeOutUserEdited = false;
+      timeOutFixed = false;
+      document.getElementById('timeOutLabel').textContent = 'เวลาปัจจุบัน';
+      document.getElementById('timeOutBox').classList.remove('user-edited');
+    } else {
+      timeBackUserEdited = false;
+      timeBackFixed = false;
+      document.getElementById('timeBackLabel').textContent = 'เวลาปัจจุบัน';
+      document.getElementById('timeBackBox').classList.remove('user-edited');
+    }
+  }
 }
 
 // ════ TABS ════
@@ -1126,31 +1187,16 @@ async function checkTodayStatus() {
         txt.textContent = `✅ กลับถึงที่แล้ว · วันนี้ ${isNaN(dist)?'-':dist.toLocaleString()} กม.`;
         // prefill เลขไมล์ออก + เวลาออก
         if (last['เลขไมล์ไป']) document.getElementById('mileOut').value = last['เลขไมล์ไป'];
-        if (last['เวลาเบิก']) {
-          document.getElementById('timeOut').value = last['เวลาเบิก'];
-          document.getElementById('timeOutDisplay').textContent = last['เวลาเบิก'];
-          document.getElementById('timeOutLabel').textContent = 'เวลาออก';
-          timeOutFixed = true;
-        }
+        if (last['เวลาเบิก']) prefillTimeOut(last['เวลาเบิก']);
         // prefill เลขไมล์กลับ + เวลากลับ
         if (last['เลขไมล์กลับ']) document.getElementById('mileBack').value = last['เลขไมล์กลับ'];
-        if (last['เวลาคืน']) {
-          document.getElementById('timeBack').value = last['เวลาคืน'];
-          document.getElementById('timeBackDisplay').textContent = last['เวลาคืน'];
-          document.getElementById('timeBackLabel').textContent = 'เวลากลับ';
-          timeBackFixed = true;
-        }
+        if (last['เวลาคืน']) prefillTimeBack(last['เวลาคืน']);
       } else {
         el.className = 'status-row out';
         txt.textContent = `🚗 ออกเดินทางแล้ว เวลา ${last['เวลาเบิก']||'-'} · ไมล์ออก ${parseInt(last['เลขไมล์ไป']||0).toLocaleString()} กม. · รอบันทึกกลับ`;
         // แสดงเลขไมล์และเวลาออกที่บันทึกแล้วใน input
         if (last['เลขไมล์ไป']) document.getElementById('mileOut').value = last['เลขไมล์ไป'];
-        if (last['เวลาเบิก']) {
-          document.getElementById('timeOut').value = last['เวลาเบิก'];
-          document.getElementById('timeOutDisplay').textContent = last['เวลาเบิก'];
-          document.getElementById('timeOutLabel').textContent = 'เวลาออก';
-          timeOutFixed = true;
-        }
+        if (last['เวลาเบิก']) prefillTimeOut(last['เวลาเบิก']);
       }
     }
   } catch(e) {}
@@ -1216,31 +1262,16 @@ async function initLoad() {
         txt.textContent = `✅ กลับถึงที่แล้ว · วันนี้ ${isNaN(dist)?'-':dist.toLocaleString()} กม.`;
         // prefill เลขไมล์ออก + เวลาออก
         if (last['เลขไมล์ไป']) document.getElementById('mileOut').value = last['เลขไมล์ไป'];
-        if (last['เวลาเบิก']) {
-          document.getElementById('timeOut').value = last['เวลาเบิก'];
-          document.getElementById('timeOutDisplay').textContent = last['เวลาเบิก'];
-          document.getElementById('timeOutLabel').textContent = 'เวลาออก';
-          timeOutFixed = true;
-        }
+        if (last['เวลาเบิก']) prefillTimeOut(last['เวลาเบิก']);
         // prefill เลขไมล์กลับ + เวลากลับ
         if (last['เลขไมล์กลับ']) document.getElementById('mileBack').value = last['เลขไมล์กลับ'];
-        if (last['เวลาคืน']) {
-          document.getElementById('timeBack').value = last['เวลาคืน'];
-          document.getElementById('timeBackDisplay').textContent = last['เวลาคืน'];
-          document.getElementById('timeBackLabel').textContent = 'เวลากลับ';
-          timeBackFixed = true;
-        }
+        if (last['เวลาคืน']) prefillTimeBack(last['เวลาคืน']);
       } else {
         el.className = 'status-row out';
         txt.textContent = `🚗 ออกเดินทางแล้ว เวลา ${cleanTime(last['เวลาเบิก'])||'-'} · ไมล์ออก ${parseInt(last['เลขไมล์ไป']||0).toLocaleString()} กม. · รอบันทึกกลับ`;
         // แสดงเลขไมล์และเวลาออกที่บันทึกแล้วใน input
         if (last['เลขไมล์ไป']) document.getElementById('mileOut').value = last['เลขไมล์ไป'];
-        if (last['เวลาเบิก']) {
-          document.getElementById('timeOut').value = last['เวลาเบิก'];
-          document.getElementById('timeOutDisplay').textContent = last['เวลาเบิก'];
-          document.getElementById('timeOutLabel').textContent = 'เวลาออก';
-          timeOutFixed = true;
-        }
+        if (last['เวลาเบิก']) prefillTimeOut(last['เวลาเบิก']);
       }
     }
   } catch(e) {
@@ -2048,6 +2079,38 @@ function formatDateSend(dateStr) {
 function formatDateTime(d) {
   const pad = n => String(n).padStart(2,'0');
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// แปลงค่าเวลา (อาจมี วินาที หรือ ช่องว่าง) เป็น HH:MM สำหรับ input[type=time]
+function toHHMM(timeStr) {
+  if (!timeStr) return '';
+  const m = String(timeStr).trim().match(/(\d{1,2}):(\d{2})/);
+  if (!m) return '';
+  return m[1].padStart(2,'0') + ':' + m[2];
+}
+
+// set เวลาออกจาก server (prefill)
+function prefillTimeOut(val) {
+  const hhmm = toHHMM(val);
+  if (!hhmm) return;
+  document.getElementById('timeOut').value = hhmm;
+  document.getElementById('timeOutDisplay').value = hhmm;
+  document.getElementById('timeOutLabel').textContent = 'เวลาออก';
+  document.getElementById('timeOutBox').classList.remove('user-edited');
+  timeOutFixed = true;
+  timeOutUserEdited = false;
+}
+
+// set เวลากลับจาก server (prefill)
+function prefillTimeBack(val) {
+  const hhmm = toHHMM(val);
+  if (!hhmm) return;
+  document.getElementById('timeBack').value = hhmm;
+  document.getElementById('timeBackDisplay').value = hhmm;
+  document.getElementById('timeBackLabel').textContent = 'เวลากลับ';
+  document.getElementById('timeBackBox').classList.remove('user-edited');
+  timeBackFixed = true;
+  timeBackUserEdited = false;
 }
 
 function toast(msg, type) {
