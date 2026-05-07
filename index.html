@@ -2194,7 +2194,15 @@ async function loadReport() {
 }
 
 function renderReport() {
-  const rows = allReport;
+  // เรียงวันล่าสุดก่อน (dd/MM/yyyy → เปรียบเทียบแบบ yyyy-MM-dd)
+  const rows = [...allReport].sort((a, b) => {
+    const toISO = d => {
+      if (!d) return '';
+      const p = String(d).trim().split('/');
+      return p.length === 3 ? `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}` : d;
+    };
+    return toISO(b['วันที่']).localeCompare(toISO(a['วันที่']));
+  });
   document.getElementById('rpCount').textContent = rows.length + ' รายการ';
   let totalMile = 0, pending = 0;
   rows.forEach(r => {
