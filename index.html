@@ -1994,18 +1994,20 @@ function fallbackCopy(txt,cb) {
 async function callGS(params, url) {
   const base = url || scriptUrl;
   if (!base) throw new Error('ไม่มี URL');
-  // flatten params — JSON.stringify values ที่เป็น object/array
-  const flat = {};
-  Object.entries(params).forEach(([k,v]) => {
-    flat[k] = (typeof v === 'object' && v !== null) ? JSON.stringify(v) : v;
-  });
-  const qs = new URLSearchParams(flat).toString();
+  const qs = Object.entries(params)
+    .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v ?? ''))
+    .join('&');
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 30000);
   try {
-    const res = await fetch(base + '?' + qs, { signal: ctrl.signal });
+    const res = await fetch(base + '?' + qs, {
+      method: 'GET',
+      signal: ctrl.signal,
+      redirect: 'follow',
+    });
     clearTimeout(t);
-    return await res.json();
+    const text = await res.text();
+    return JSON.parse(text);
   } catch(e) {
     clearTimeout(t);
     if (e.name === 'AbortError') throw new Error('หมดเวลาเชื่อมต่อ');
