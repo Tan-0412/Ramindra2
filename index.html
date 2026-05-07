@@ -1994,7 +1994,12 @@ function fallbackCopy(txt,cb) {
 async function callGS(params, url) {
   const base = url || scriptUrl;
   if (!base) throw new Error('ไม่มี URL');
-  const qs = new URLSearchParams(params).toString();
+  // flatten params — JSON.stringify values ที่เป็น object/array
+  const flat = {};
+  Object.entries(params).forEach(([k,v]) => {
+    flat[k] = (typeof v === 'object' && v !== null) ? JSON.stringify(v) : v;
+  });
+  const qs = new URLSearchParams(flat).toString();
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 30000);
   try {
