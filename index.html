@@ -1246,7 +1246,7 @@ async function initLoad() {
     if (todayRows.length === 0) {
       el.className = 'status-row empty';
       txt.textContent = 'วันนี้ยังไม่มีการบันทึก';
-
+    } else {
       const last = todayRows[todayRows.length-1];
       const hasBack = last['เลขไมล์กลับ'] && last['เลขไมล์กลับ'] !== '';
       if (hasBack) {
