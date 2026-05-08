@@ -1345,7 +1345,6 @@ async function saveRecord(type) {
           toast(`✅ บันทึกไมล์กลับ ${parseInt(mile).toLocaleString()} กม. ให้วันที่ ${cleanDate(yestSend)} อัตโนมัติแล้ว (กรุณาเพิ่มเวลาคืนทีหลัง)`, 'ok');
         } catch(e2) {}
       }
-      }
     } catch(e) { /* ถ้า check ไม่ได้ให้ผ่านต่อ */ }
 
     try {
@@ -1403,8 +1402,6 @@ async function saveRecord(type) {
             toast(`✅ บันทึกไมล์ออก ${parseInt(autoMileOut).toLocaleString()} กม. อัตโนมัติแล้ว (กรุณาเพิ่มเวลาเบิกทีหลัง)`, 'ok');
           } catch(e2) {}
         }
-      }
-        return;
       }
     } catch(e) {}
 
