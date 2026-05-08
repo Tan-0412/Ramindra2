@@ -1175,8 +1175,7 @@ async function checkTodayStatus() {
     const ym = today.substring(0,7);
     const d = await callGS({ action: 'getData', month: ym });
     const rows = (d.data||[]).filter(r => {
-      const rd = (r['วันที่']||'').trim();
-      return rd === todaySend;
+      return normDate(r['วันที่']||'') === normDate(todaySend);
     });
     const el = document.getElementById('todayStatus');
     const txt = document.getElementById('todayStatusTxt');
